@@ -202,14 +202,26 @@ fi
 ########## INFO ##########
 if test "$base_dir" == ""; then
     if test "${verbose:-0}" != "0"; then
-        echo "No --base-dir set, setting to: $(pwd)"
+        echo "No --base-dir set, getting from pwd"
     fi
 
     base_dir="$(pwd)"
+
+    if test "${verbose:-0}" != "0"; then
+        echo "  Set to: ${base_dir}"
+    fi
 fi
 
 if [[ -z "${repo_token}" ]]; then
+    if test "${verbose:-0}" != "0"; then
+        echo "No --repo-token set, getting from REPO_TOKEN environment variable"
+    fi
+
     repo_token=$(printenv REPO_TOKEN | xargs)
+
+    if test "${verbose:-0}" != "0"; then
+        echo "  Found: ${repo_token}"
+    fi
 fi
 
 # todo clean stuff we dont need
