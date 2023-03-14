@@ -214,10 +214,10 @@ fi
 
 if [[ -z "${repo_token}" ]]; then
     if test "${verbose:-0}" != "0"; then
-        echo "No --repo-token set, getting from REPO_TOKEN environment variable"
+        echo "No --repo-token set, getting from OTTERWISE_TOKEN environment variable"
     fi
 
-    repo_token=$(printenv REPO_TOKEN | xargs)
+    repo_token=$(printenv OTTERWISE_TOKEN | xargs)
 
     if test "${verbose:-0}" != "0"; then
         echo "  Found: ${repo_token}"
@@ -239,6 +239,7 @@ if test "${verbose:-0}" != "0"; then
     echo "  CI Repo: ${ci_repo}"
     echo "  Repo Token: ${repo_token}"
     echo "  Base Dir: ${base_dir}"
+    echo "  Endpoint: ${endpoint:-https://otterwise.app/ingress/upload}"
 fi
 
 if test "${verbose:-0}" != "0"; then
@@ -258,7 +259,7 @@ UPLOAD_RESPONSE=$(curl --retry 5 --retry-max-time 60 --retry-all-errors \
     -F git_head_branch="${ci_branch}" \
     -F git_branch="${branch_name}" \
     -F base_dir="${base_dir}" \
-    -s "${endpoint:-\"https://otterwise.app/ingress/upload\"}")
+    -s "${endpoint:-https://otterwise.app/ingress/upload}")
 
 res=$?
 
