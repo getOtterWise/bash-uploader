@@ -246,7 +246,7 @@ if test "${verbose:-0}" != "0"; then
     echo "Uploading coverage ..."
 fi
 
-UPLOAD_RESPONSE=$(curl --retry 5 --retry-max-time 60 --retry-all-errors \
+UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
     -F clover=@"${coverage_path}" \
     -F ci_provider="${ci_detected}" \
     -F ci_job="${ci_job_id}" \
@@ -263,11 +263,8 @@ UPLOAD_RESPONSE=$(curl --retry 5 --retry-max-time 60 --retry-all-errors \
 
 if [ 0 -eq $? ]; then
     echo "  Coverage uploaded to OtterWise for processing!"
-    if test "${verbose:-0}" != "0"; then
-        echo "  Curl Output: $UPLOAD_RESPONSE"
-    fi
 else
-    echo "  Upload of code coverage to OtterWise failed with response: ${UPLOAD_RESPONSE}"
+    echo "  Upload of code coverage to OtterWise failed with response: ${$?}"
 
     if test "${ignore_errors:-0}" != "1"; then
         exit 1
