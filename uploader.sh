@@ -41,7 +41,7 @@ if test "${verbose:-0}" != "0"; then
     echo "Attempting to detect Git info ..."
 fi
 branch_names="$(git branch | xargs)"
-IFS="\n"
+IFS=$'\n'
 read -r -a branches <<<"${branch_names}"
 for branch in "${branches[@]}"; do
     if [[ ${branch} = "* (no branch)" ]]; then
@@ -261,7 +261,7 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
     -F base_dir="${base_dir}" \
     -s "${endpoint:-https://otterwise.app/ingress/upload}")
 
-uploaded=$(grep -o '\"Queued for processing\"' <<< "$res" | head -1 | cut -d' ' -f2)
+uploaded=$(grep -o '\"Queued for processing\"' <<< "$UPLOAD_RESPONSE" | head -1 | cut -d' ' -f2)
 
 if test "$uploaded" == "true"; then
     echo "  Coverage uploaded to OtterWise for processing!"
