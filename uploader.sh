@@ -259,17 +259,17 @@ UPLOAD_RESPONSE=$(curl --retry 5 --retry-max-time 60 --retry-all-errors \
     -F git_head_branch="${ci_branch}" \
     -F git_branch="${branch_name}" \
     -F base_dir="${base_dir}" \
-    -s "${endpoint:-https://otterwise.app/ingress/upload}")
+    -s -f "${endpoint:-https://otterwise.app/ingress/upload}")
 
 if [ 0 -eq $? ]; then
+    echo "  Coverage uploaded to OtterWise for processing!"
+    if test "${verbose:-0}" != "0"; then
+        echo "  Curl Output: $UPLOAD_RESPONSE"
+    fi
+else
     echo "  Upload of code coverage to OtterWise failed with response: ${UPLOAD_RESPONSE}"
 
     if test "${ignore_errors:-0}" != "1"; then
         exit 1
-    fi
-else
-    echo "  Coverage uploaded to OtterWise for processing!"
-    if test "${verbose:-0}" != "0"; then
-        echo "  Curl Output: $UPLOAD_RESPONSE"
     fi
 fi
