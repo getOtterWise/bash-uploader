@@ -261,15 +261,15 @@ UPLOAD_RESPONSE=$(curl --retry 5 --retry-max-time 60 --retry-all-errors \
     -F base_dir="${base_dir}" \
     -s "${endpoint:-https://otterwise.app/ingress/upload}")
 
-res=$?
-
-if test "$res" != "0"; then
-    echo "  Upload of code coverage to OtterWise failed with cURL error $res"
+if [ 0 -eq $? ]; then
+    echo "  Upload of code coverage to OtterWise failed with response: ${UPLOAD_RESPONSE}"
 
     if test "${ignore_errors:-0}" != "1"; then
-        exit "$res"
+        exit 1
     fi
-elif test "${verbose:-0}" != "0"; then
-    echo "  Coverage uploaded"
-    echo "  Curl Output: $UPLOAD_RESPONSE"
+else
+    echo "  Coverage uploaded to OtterWise for processing!"
+    if test "${verbose:-0}" != "0"; then
+        echo "  Curl Output: $UPLOAD_RESPONSE"
+    fi
 fi
