@@ -263,7 +263,7 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
 
 uploaded=$(grep -o '\"Queued for processing\"' <<< "$res" | head -1 | cut -d' ' -f2)
 
-if [ "$uploaded" = "true" ]
+if [ "$uploaded" = "true" ]; then
     echo "  Coverage uploaded to OtterWise for processing!"
 else
     echo "  Upload of code coverage to OtterWise failed with response: ${UPLOAD_RESPONSE}"
