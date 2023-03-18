@@ -259,12 +259,14 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
     -F git_head_branch="${ci_branch}" \
     -F git_branch="${branch_name}" \
     -F base_dir="${base_dir}" \
-    -s -f "${endpoint:-https://otterwise.app/ingress/upload}")
+    -s "${endpoint:-https://otterwise.app/ingress/upload}")
 
-if [ 0 -eq $? ]; then
+uploaded=$(grep -o '\"Queued for processing\"' <<< "$res" | head -1 | cut -d' ' -f2)
+
+if [ "$uploaded" = "true" ]
     echo "  Coverage uploaded to OtterWise for processing!"
 else
-    echo "  Upload of code coverage to OtterWise failed with response: ${$?}"
+    echo "  Upload of code coverage to OtterWise failed with response: ${UPLOAD_RESPONSE}"
 
     if test "${ignore_errors:-0}" != "1"; then
         exit 1
