@@ -261,9 +261,9 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
     -F base_dir="${base_dir}" \
     -s "${endpoint:-https://otterwise.app/ingress/upload}")
 
-uploaded=$(grep -o '\"Queued for processing\"' <<< "$UPLOAD_RESPONSE" | head -1 | cut -d' ' -f2)
+uploaded=$(grep -o '\"Queued for processing\"' <<< "$UPLOAD_RESPONSE")
 
-if test "$uploaded" == "true"; then
+if test "$uploaded" == "Queued for processing"; then
     echo "  Coverage uploaded to OtterWise for processing!"
 else
     echo "  Upload of code coverage to OtterWise failed with response: ${UPLOAD_RESPONSE}"
