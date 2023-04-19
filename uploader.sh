@@ -145,7 +145,7 @@ elif [ -n "$(printenv CHIPPER | xargs)" ]; then
     ci_detected="chipper-ci"
     ci_pr="$(printenv CI_COMMIT_TAG | xargs)" # todo figure out if this is correct (is it release, not PR?)
     ci_branch="$(printenv CI_COMMIT_BRANCH | xargs)"
-    print "$(printenv CI_COMMIT_BRANCH | xargs)"
+    echo "$(printenv CI_CLONE_URL | xargs)"
 elif [ -n "$(printenv COTTER_LOCAL | xargs)" ]; then
     if test "${verbose:-0}" != "0"; then
         echo "  Detected Local"
