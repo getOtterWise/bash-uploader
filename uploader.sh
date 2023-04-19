@@ -152,7 +152,7 @@ elif [ -n "$(printenv CHIPPER | xargs)" ]; then
     ci_clone_url="$(printenv CI_COMMIT_BRANCH | xargs)"
     
     # Try with GitHub format
-    ci_repo=$(ci_clone_url | sed 's/github\.com:?\/?([\S]{1,}\/[\S]{1,})\.git/\1/')
+    ci_repo=$($ci_clone_url | sed 's/github\.com:?\/?([\S]{1,}\/[\S]{1,})\.git/\1/')
     
     if test "${verbose:-0}" != "0"; then
         echo "  Found:${ci_repo}"
