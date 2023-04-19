@@ -145,14 +145,14 @@ elif [ -n "$(printenv CHIPPER | xargs)" ]; then
     ci_detected="chipper-ci"
     ci_pr="$(printenv CI_COMMIT_TAG | xargs)" # todo figure out if this is correct (is it release, not PR?)
     ci_branch="$(printenv CI_COMMIT_BRANCH | xargs)"
-    
-    if test "${verbose:-0}" != "0"; then
-        echo "  Using Clone URL to detect repo name"
-    fi
     ci_clone_url="$(printenv CI_COMMIT_BRANCH | xargs)"
     
+    if test "${verbose:-0}" != "0"; then
+        echo "  Using Clone URL to detect repository: ${ci_clone_url}"
+    fi
+    
     # Try with GitHub format
-    ci_repo=$(echo "$ci_clone_url" | sed -E 's|.*github\.com[:/]?([^/]+/[^/]+)\.git|\1|')
+    ci_repo=$(echo "$ci_clone_url" | sed -rE 's|.*github\.com[:/]?([^/]+/[^/]+)\.git|\1|')
     
     if test "${verbose:-0}" != "0"; then
         echo "  Found:${ci_repo}"
