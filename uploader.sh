@@ -141,7 +141,17 @@ elif [ -n "$(printenv JENKINS_URL | xargs)" ]; then
 elif [ -n "$(printenv CHIPPER | xargs)" ]; then
     if test "${verbose:-0}" != "0"; then
         echo "  Detected ChipperCI"
+        echo "  Environment:"
+     
+        echo "    CI_COMMIT_SHA: $(printenv CI_COMMIT_SHA | xargs)"
+        echo "    CI_COMMIT_SHA_SHORT: $(printenv CI_COMMIT_SHA_SHORT | xargs)"
+        echo "    CI_COMMIT_BRANCH: $(printenv CI_COMMIT_BRANCH | xargs)"
+        echo "    CI_COMMIT_TAG: $(printenv CI_COMMIT_TAG | xargs)"
+        echo "    CI_COMMIT_MESSAGE: $(printenv CI_COMMIT_MESSAGE | xargs)"
+        echo "    CI_CLONE_URL: $(printenv CI_CLONE_URL | xargs)"
+        echo "    CI_COMMIT_USER: $(printenv CI_COMMIT_USER | xargs)"
     fi
+    
     ci_detected="chipper-ci"
     ci_pr="$(printenv CI_COMMIT_TAG | xargs)" # todo figure out if this is correct (is it release, not PR?)
     ci_branch="$(printenv CI_COMMIT_BRANCH | xargs)"
