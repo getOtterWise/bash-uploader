@@ -1,5 +1,6 @@
 #!/bin/bash
-# CONFIG
+
+# CI configuration
 while [ $# -gt 0 ]; do
     case "$1" in
     -endpoint | --endpoint)
@@ -8,14 +9,14 @@ while [ $# -gt 0 ]; do
     -file | --file)
         file="$2"
         ;;
-    -verbose | --verbose)
-        verbose=1
+    -quiet | --quiet)
+        quiet=1
         ;;
     -repo-token | --repo-token)
         repo_token="$2"
         ;;
-    -ignore-errors | --ignore-errors)
-        ignore_errors=1
+    -fail-on-errors | --stop-on-errors)
+        fail_on_errors=1
         ;;
     -base-dir | --base-dir)
         base_dir="$2"
@@ -26,18 +27,18 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if test "${verbose:-0}" != "0"; then
+if test "${quiet:-0}" != "1"; then
         echo "Uploader Config:"
         echo "  --endpoint = ${endpoint}"
         echo "  --file = ${file}"
         echo "  --repo-token = ${repo_token}"
-        echo "  --ignore-errors = ${ignore_errors}"
-        echo "  --verbose = ${verbose}"
+        echo "  --fail-on-errors = ${fail_on_errors}"
+        echo "  --quiet = ${quiet}"
         echo "  --base-dir = ${base_dir}"
 fi
 
 ########## GIT ##########
-if test "${verbose:-0}" != "0"; then
+if test "${quiet:-0}" != "1"; then
     echo "Attempting to detect Git info ..."
 fi
 branch_names="$(git branch | xargs)"
@@ -51,19 +52,19 @@ for branch in "${branches[@]}"; do
     fi
 done
 
-if test "${verbose:-0}" != "0"; then
+if test "${quiet:-0}" != "1"; then
     echo "    Branch: ${branch_name}"
 fi
 
 # get commit sha
 commit_sha=$(git log -1 --pretty=format:'%H' | xargs)
 
-if test "${verbose:-0}" != "0"; then
+if test "${quiet:-0}" != "1"; then
     echo "    Commit SHA: ${commit_sha}"
 fi
 
 ########## CI ##########
-if test "${verbose:-0}" != "0"; then
+if test "${quiet:-0}" != "1"; then
     echo "Attempting to detect CI environment ..."
 fi
 ci_pr=""
@@ -72,7 +73,7 @@ ci_branch=""
 ci_base_branch=""
 ci_head_commit=""
 if [ -n "$(printenv TRAVIS | xargs)" ]; then
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Detected TravisCI"
     fi
     ci_detected="travis-ci"
@@ -80,7 +81,7 @@ if [ -n "$(printenv TRAVIS | xargs)" ]; then
     ci_job_id="$(printenv TRAVIS_JOB_ID | xargs)"
     ci_build_number="$(printenv TRAVIS_BUILD_NUMBER | xargs)"
 elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Detected Github Actions"
     fi
     ci_detected="github-actions"
@@ -94,7 +95,7 @@ elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
     github_event="$(printenv GITHUB_EVENT_NAME | xargs)"
     ci_head_commit="$(printenv GITHUB_SHA | xargs)"
     if [[ ${github_event} = "pull_request" ]]; then
-        if test "${verbose:-0}" != "0"; then
+        if test "${quiet:-0}" != "1"; then
             echo "  Found Pull Request"
         fi
         IFS='/'
@@ -110,7 +111,7 @@ elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
         fi
     fi
 elif [ -n "$(printenv CIRCLECI | xargs)" ]; then
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Detected CircleCI"
     fi
     ci_detected="circle-ci"
@@ -118,7 +119,7 @@ elif [ -n "$(printenv CIRCLECI | xargs)" ]; then
     ci_build_number="$(printenv CIRCLE_WORKFLOW_ID | xargs)"
     ci_pr="$(printenv CIRCLE_PR_NUMBER | xargs)"
 elif [ -n "$(printenv APPVEYOR | xargs)" ]; then
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Detected AppVeyer"
     fi
     ci_detected="appveyor"
@@ -127,7 +128,7 @@ elif [ -n "$(printenv APPVEYOR | xargs)" ]; then
     ci_job_id="$(printenv APPVEYOR_JOB_NUMBER | xargs)"
     ci_build_number="$(printenv APPVEYOR_BUILD_NUMBER | xargs)"
 elif [ -n "$(printenv JENKINS_URL | xargs)" ]; then
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Detected Jenkins"
     fi
     ci_detected="jenkins"
@@ -139,7 +140,7 @@ elif [ -n "$(printenv JENKINS_URL | xargs)" ]; then
     ci_branch="${ci_branch:=$(printenv GIT_BRANCH | xargs)}"
     ci_branch="${ci_branch:=$(printenv BRANCH_NAME | xargs)}"
 elif [ -n "$(printenv CHIPPER | xargs)" ]; then
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Detected ChipperCI"
         echo "  Environment:"
      
@@ -157,26 +158,26 @@ elif [ -n "$(printenv CHIPPER | xargs)" ]; then
     ci_branch="$(printenv CI_COMMIT_BRANCH | xargs)"
     ci_clone_url="$(printenv CI_CLONE_URL | xargs)"
     
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Using Clone URL to detect repository: ${ci_clone_url}"
     fi
     
     # Try with GitHub format
     ci_repo=$(echo "$ci_clone_url" | sed -rE 's|.*github\.com[:/]?([^/]+/[^/]+)\.git|\1|')
     
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Found: ${ci_repo}"
     fi
 elif [ -n "$(printenv COTTER_LOCAL | xargs)" ]; then
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Detected Local"
     fi
     ci_detected="local"
 else
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Could not detect CI"
 
-        if test "${ignore_errors:-0}" != "1"; then
+        if test "${fail_on_errors:-0}" != "0"; then
             exit 1
         else
             exit 0
@@ -191,7 +192,7 @@ fi
 # todo bitbucketCI
 
 ########## COVERAGE FILE ##########
-if test "${verbose:-0}" != "0"; then
+if test "${quiet:-0}" != "1"; then
     echo "Looking for coverage file ..."
 fi
 if test "$file" == ""; then
@@ -199,7 +200,7 @@ if test "$file" == ""; then
         coverage_path="build/logs/clover.xml"
     else
         echo "  Could not determine Coverage file path, please verify that the file exists. Alternatively pass it with --file [PATH]"
-        if test "${ignore_errors:-0}" != "1"; then
+        if test "${fail_on_errors:-0}" != "0"; then
             exit 1
         else
             exit 0
@@ -208,7 +209,7 @@ if test "$file" == ""; then
 else
     if [ ! -f "${file}" ]; then
         echo "  Passed --file '${file}' does not exist."
-        if test "${ignore_errors:-0}" != "1"; then
+        if test "${fail_on_errors:-0}" != "0"; then
             exit 1
         else
             exit 0
@@ -217,37 +218,37 @@ else
     coverage_path="${file}"
 fi
 
-if test "${verbose:-0}" != "0"; then
+if test "${quiet:-0}" != "1"; then
     echo "  Found at ${coverage_path}"
 fi
 
 ########## INFO ##########
 if test "$base_dir" == ""; then
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "No --base-dir set, getting from pwd"
     fi
 
     base_dir="$(pwd)"
 
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Set to: ${base_dir}"
     fi
 fi
 
 if [[ -z "${repo_token}" ]]; then
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "No --repo-token set, getting from OTTERWISE_TOKEN environment variable"
     fi
 
     repo_token=$(printenv OTTERWISE_TOKEN | xargs)
 
-    if test "${verbose:-0}" != "0"; then
+    if test "${quiet:-0}" != "1"; then
         echo "  Found: ${repo_token}"
     fi
 fi
 
 # todo clean stuff we dont need
-if test "${verbose:-0}" != "0"; then
+if test "${quiet:-0}" != "1"; then
     echo "Detected data:"
     echo "  Git Branch: ${branch_name}"
     echo "  Git Commit sha: ${commit_sha}"
@@ -264,7 +265,7 @@ if test "${verbose:-0}" != "0"; then
     echo "  Endpoint: ${endpoint:-https://otterwise.app/ingress/upload}"
 fi
 
-if test "${verbose:-0}" != "0"; then
+if test "${quiet:-0}" != "1"; then
     echo "Uploading coverage ..."
 fi
 
@@ -290,7 +291,7 @@ if test "${uploaded}" == "Queued for processing"; then
 else
     echo "  Upload of code coverage to OtterWise failed with response: ${UPLOAD_RESPONSE}"
 
-    if test "${ignore_errors:-0}" != "1"; then
+    if test "${fail_on_errors:-0}" != "0"; then
         exit 1
     fi
 fi
