@@ -41,7 +41,7 @@ fi
 if test "${quiet:-0}" != "1"; then
     echo "Attempting to detect Git info ..."
 fi
-branch_names="$(git branch | xargs)"
+branch_names="$(git branch)"
 IFS=$'\n'
 read -r -a branches <<<"${branch_names}"
 for branch in "${branches[@]}"; do
