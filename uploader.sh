@@ -41,9 +41,16 @@ fi
 if test "${quiet:-0}" != "1"; then
     echo "Attempting to detect Git info ..."
 fi
+
 branch_names="$(git branch)"
+
+if test "${quiet:-0}" != "1"; then
+    echo "    `git branch` output: ${branch_names}"
+fi
+
 IFS=$'\n'
 read -r -a branches <<<"${branch_names}"
+
 for branch in "${branches[@]}"; do
     if [[ ${branch} = "* (no branch)" ]]; then
         branch_name="(no branch)"
