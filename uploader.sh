@@ -45,7 +45,7 @@ fi
 branch_names="$(git branch)"
 
 if test "${quiet:-0}" != "1"; then
-    echo "    `git branch` output: ${branch_names}"
+    echo "    git branch output: ${branch_names}"
 fi
 
 IFS=$'\n'
