@@ -27,8 +27,6 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-echo $(git diff HEAD^1 HEAD)
-
 if test "${quiet:-0}" != "1"; then
         echo "Uploader Config:"
         echo "  --endpoint = ${endpoint}"
@@ -105,7 +103,7 @@ if test "${quiet:-0}" != "1"; then
     echo "    Parent Commit Message: ${parent_commit_message}"
 fi
 
-# get and cleanup git diff
+# Git Diff Wiper / Cleaner
 parseGitDiff() {
     local diff="$1"
     IFS=$'\n' read -d '' -ra lines <<< "$diff"
@@ -280,18 +278,12 @@ fi
 
 
 ########## GIT DIFF ##########
-if [ "${ci_branch}" != "" ] && [ "${ci_base_branch}" != "" ]; then
-    base_commit_sha=$(git merge-base ${ci_branch} ${ci_base_branch})
-else
-    base_commit_sha=${commit_parent}
-fi
-
-diffContent=$(git diff --unified=0 ${base_commit_sha} ${commit_sha})
+diffContent=$(git diff HEAD^1 HEAD --unified=0)
 parsedDiff=$(parseGitDiff "$diffContent")
-
-#if test "${quiet:-0}" != "1"; then
-    # echo "Wiped Git Diff: ${parsedDiff}" # for now dont spam this
-#fi
+    
+if test "${quiet:-0}" != "1"; then
+    echo "Wiped Git Diff: ${parsedDiff}"
+fi
 
 ########## COVERAGE FILE ##########
 if test "${quiet:-0}" != "1"; then
@@ -366,7 +358,6 @@ if test "${quiet:-0}" != "1"; then
     echo "  CI Build: ${ci_build_number}"
     echo "  CI PR: ${ci_pr}"
     echo "  CI Head Commit: ${ci_head_commit}"
-    echo "  CI Base Commit: ${base_commit_sha}"
     echo "  CI Head Branch: ${ci_branch}"
     echo "  CI Base Branch: ${ci_base_branch}"
     echo "  CI Repo: ${ci_repo}"
