@@ -278,7 +278,7 @@ fi
 
 
 ########## GIT DIFF ##########
-if [test "${branch_name}" != ""] && [test "${ci_base_branch}" != ""]; then
+if [ "${branch_name}" != "" ] && [ "${ci_base_branch}" != "" ]; then
     base_commit_sha=$(git rev-list $(git rev-list --first-parent ^${ci_branch} ${ci_base_branch} | tail -n1)^^!)
 else
     base_commit_sha=${commit_parent}
