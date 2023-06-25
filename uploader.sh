@@ -280,7 +280,7 @@ fi
 ########## GIT DIFF ##########
 if [ "${ci_branch}" != "" ] && [ "${ci_base_branch}" != "" ]; then
     echo "${ci_branch} ${ci_base_branch}"
-    base_commit_sha=$(git rev-list $(git rev-list --first-parent ^${ci_branch} ${ci_base_branch} | tail -n1)^^!)
+    base_commit_sha=$(git rev-list $(git rev-list --first-parent ^"'${ci_branch}'" "'${ci_base_branch}'" | tail -n1)^^!)
 else
     base_commit_sha=${commit_parent}
 fi
