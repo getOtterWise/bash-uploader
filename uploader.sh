@@ -391,6 +391,7 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
     -F parent_commit_author_name="${parent_commit_author_name}" \
     -F parent_commit_author_email="${parent_commit_author_email}" \
     -F parent_commit_author_message="${parent_commit_message}" \
+    -F git_diff="${parsedDiff}" \
     -F base_dir="${base_dir}" \
     -s "${endpoint:-https://otterwise.app/ingress/upload}")
 
