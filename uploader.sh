@@ -27,8 +27,6 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-git branch
-
 if test "${quiet:-0}" != "1"; then
         echo "Uploader Config:"
         echo "  --endpoint = ${endpoint}"
