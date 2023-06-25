@@ -295,6 +295,8 @@ fi
 if test "$file" == ""; then
     if [ -f "build/logs/clover.xml" ]; then
         coverage_path="build/logs/clover.xml"
+    elif [ -f "build/logs/cobertura.xml" ]; then
+        coverage_path="build/logs/cobertura.xml"
     else
         echo "  Could not determine Coverage file path, please verify that the file exists. Alternatively pass it with --file [PATH]"
         if test "${fail_on_errors:-0}" != "0"; then
