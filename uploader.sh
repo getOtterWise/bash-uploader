@@ -113,16 +113,26 @@ parseGitDiff() {
         line="${lines[$index]}"
 
         if [[ $line == "diff --git a/"* ]]; then
-            linesOfGitDiffInfo=4
+            continue
         fi
 
-        if [[ $linesOfGitDiffInfo -gt 0 ]]; then
-            ((linesOfGitDiffInfo--))
+        if [[ $line =~ ^(new file mode [0-9]{6}) ]]; then
+            continue
+        fi
+
+        if [[ $line =~ ^(delete file mode [0-9]{6}) ]]; then
+            continue
+        fi
+
+        if [[ $line =~ ^(index ([0-9a-zA-Z]{7})\.\.([0-9a-zA-Z]{7})) ]]; then
+            continue
+        fi
+
+        if [[ $line =~ ^((---)?(\+\+\+)?) ]]; then
             continue
         fi
 
         if [[ $line =~ ^(@@ -[0-9]{1,}(,[0-9]{1,}){0,1} \+[0-9]{1,}(,[0-9]{1,}) @@) ]]; then
-            echo "AAAA";
             lines[$index]="${BASH_REMATCH[1]}"
             continue
         fi
@@ -264,7 +274,7 @@ fi
 
 
 ########## GIT DIFF ##########
-if test "${ci_branch}" != "" AND test "${ci_base_branch}" != ""; then
+if [test "${branch_name}" != ""] && [test "${ci_base_branch}" != ""]; then
     base_commit_sha=$(git rev-list $(git rev-list --first-parent ^${ci_branch} ${ci_base_branch} | tail -n1)^^!)
 else
     base_commit_sha=${commit_parent}
