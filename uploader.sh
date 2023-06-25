@@ -136,7 +136,7 @@ parseGitDiff() {
             continue
         fi
 
-        if [[ $line =~ ^(@@ -[0-9]{1,}(,[0-9]{1,}){0,1} \+[0-9]{1,}(,[0-9]{1,}) @@) ]]; then
+        if [[ $line =~ ^(@@ -[0-9]{1,}(,[0-9]{1,}){0,1} \+[0-9]{1,}(,[0-9]{1,}){0,1} @@) ]]; then
             lines[$index]="${BASH_REMATCH[1]}"
             continue
         fi
