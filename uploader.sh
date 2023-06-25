@@ -281,9 +281,9 @@ fi
 diffContent=$(git diff HEAD^1 HEAD --unified=0)
 parsedDiff=$(parseGitDiff "$diffContent")
     
-if test "${quiet:-0}" != "1"; then
-    echo "Wiped Git Diff: ${parsedDiff}"
-fi
+#if test "${quiet:-0}" != "1"; then
+#    echo "Wiped Git Diff: ${parsedDiff}" # Don't output this, as its messy
+#fi
 
 ########## COVERAGE FILE ##########
 if test "${quiet:-0}" != "1"; then
