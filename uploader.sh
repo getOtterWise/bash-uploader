@@ -133,8 +133,8 @@ parseGitDiff() {
     printf "%s\n" "${lines[@]}"
 }
 
-# Example usage
-diffContent=$(git diff --unified=0)
+# TODO GET BASE COMMIT, NOT MOST RECENT PARENT (IF PR)
+diffContent=$(git diff --unified=0 ${commit_sha} ${commit_parent})
 parsedDiff=$(parseGitDiff "$diffContent")
 echo "Parsed Git Diff: $parsedDiff"
 
