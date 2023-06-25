@@ -103,6 +103,55 @@ if test "${quiet:-0}" != "1"; then
     echo "    Parent Commit Message: ${parent_commit_message}"
 fi
 
+# get and cleanup git diff
+function parseGitDiff() {
+    local diff=$1
+    local lines=()
+    local parsedDiff=()
+    local currentFile
+    local currentHunk
+
+    IFS=$'\n' read -rd '' -a lines <<< "$diff"
+
+    for line in "${lines[@]}"; do
+        if [[ $line == 'diff --git'* ]]; then
+            # Start of a new file diff
+            currentFile=""
+            currentHunk=""
+            
+            if [[ $line =~ diff\ --git\ a/(.*)\ b/(.*) ]]; then
+                currentFile="${BASH_REMATCH[2]}"
+                declare -A currentFileArr=()
+                currentFileArr["lines"]=()
+                parsedDiff["$currentFile"]=currentFileArr
+            fi
+        elif [[ $line == '@@'* ]]; then
+            # Start of a hunk
+            currentHunk=""
+            
+            if [[ $line =~ @@\s+-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?\s+@@ ]]; then
+                currentHunkArr=()
+                currentHunkArr["oldStart"]="${BASH_REMATCH[1]}"
+                currentHunkArr["newStart"]="${BASH_REMATCH[3]}"
+                currentFileArr["hunks"]+=("$currentHunkArr")
+            fi
+        elif [[ -n $currentFile && -n $currentHunk ]]; then
+            # Line within a hunk
+            lineNumber=$((currentHunkArr["newStart"] + ${#currentFileArr["lines"]} + 1))
+            currentFileArr["lines"][$lineNumber]="$line"
+        fi
+    done
+
+    declare -p parsedDiff
+}
+
+# Example usage
+diffContent=$(git diff)
+
+parsedDiff=$(parseGitDiff "$diffContent")
+declare -p parsedDiff
+echo "${parsedDiff}"
+
 ########## CI ##########
 if test "${quiet:-0}" != "1"; then
     echo "Attempting to detect CI environment ..."
