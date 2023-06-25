@@ -120,7 +120,7 @@ parseGitDiff() {
             continue
         fi
 
-        if [[ $line =~ ^(delete file mode [0-9]{6}) ]]; then
+        if [[ $line =~ ^(deleted file mode [0-9]{6}) ]]; then
             continue
         fi
 
