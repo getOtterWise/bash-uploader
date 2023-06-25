@@ -145,12 +145,10 @@ function parseGitDiff() {
     declare -p parsedDiff
 }
 
-# Example usage
-diffContent=$(git diff)
-
+diffContent=$(git diff | xargs)
 parsedDiff=$(parseGitDiff "$diffContent")
 declare -p parsedDiff
-echo "${parsedDiff}"
+echo "Parsed git diff: ${parsedDiff}"
 
 ########## CI ##########
 if test "${quiet:-0}" != "1"; then
