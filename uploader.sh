@@ -128,7 +128,11 @@ parseGitDiff() {
             continue
         fi
 
-        if [[ $line =~ ^((---)?(\+\+\+)?) ]]; then
+        if [[ $line =~ ^(--- ) ]]; then
+            continue
+        fi
+
+        if [[ $line =~ ^(\+\+\+ ) ]]; then
             continue
         fi
 
