@@ -70,6 +70,39 @@ if test "${quiet:-0}" != "1"; then
     echo "    Commit SHA: ${commit_sha}"
 fi
 
+# get commit info
+head_commit_author_name=$(git log -1 --format="%an" ${commit_sha})
+head_commit_author_email=$(git log -1 --format="%ae" ${commit_sha})
+head_commit_message=$(git log -1 --format="%s" ${commit_sha})
+
+if test "${quiet:-0}" != "1"; then
+    echo "    Commit Author: ${head_commit_author_name} <${head_commit_author_email}>"
+    echo "    Commit Message: ${head_commit_message}"
+fi
+
+# get first parent commit
+commit_parent=$(git rev-parse ${commit_sha}^1)
+
+if test "${quiet:-0}" != "1"; then
+    echo "    Commit Parent: ${commit_parent}"
+fi
+
+# get parent commit info if any
+if test "${commit_parent}" != ""; then
+    parent_commit_author_name=$(git log -1 --format="%an" ${commit_parent})
+    parent_commit_author_email=$(git log -1 --format="%ae" ${commit_parent})
+    parent_commit_message=$(git log -1 --format="%s" ${commit_parent})
+else
+    parent_commit_author_name=""
+    parent_commit_author_email=""
+    parent_commit_message="<<NO PARENT>>"
+fi
+
+if test "${quiet:-0}" != "1"; then
+    echo "    Parent Commit Author: ${parent_commit_author_name} <${parent_commit_author_email}>"
+    echo "    Parent Commit Message: ${parent_commit_message}"
+fi
+
 ########## CI ##########
 if test "${quiet:-0}" != "1"; then
     echo "Attempting to detect CI environment ..."
