@@ -291,7 +291,12 @@ fi
 if test "${quiet:-0}" != "1"; then
     echo "Detected data:"
     echo "  Git Branch: ${branch_name}"
-    echo "  Git Commit sha: ${commit_sha}"
+    echo "  Git Commit Sha: ${commit_sha}"
+    echo "  Git Commit Author: ${head_commit_author_name} (${head_commit_author_email})"
+    echo "  Git Commit Message: ${head_commit_message}"
+    echo "  Git Parent Commit Sha: ${commit_parent}"
+    echo "  Git Parent Commit Author: ${parent_commit_author_name} (${parent_commit_author_email})"    
+    echo "  Git Parent Commit Message: ${parent_commit_message}"
     echo "  CI Provider: ${ci_detected}"
     echo "  CI JOB: ${ci_job_id}"
     echo "  CI Build: ${ci_build_number}"
@@ -321,6 +326,13 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
     -F git_base_branch="${ci_base_branch}" \
     -F git_head_branch="${ci_branch}" \
     -F git_branch="${branch_name}" \
+    -F head_commit_author_name="${head_commit_author_name}" \
+    -F head_commit_author_email="${head_commit_author_email}" \
+    -F head_commit_author_message="${head_commit_message}" \
+    -F parent_commit_sha="${commit_parent}" \
+    -F parent_commit_author_name="${parent_commit_author_name}" \
+    -F parent_commit_author_email="${parent_commit_author_email}" \
+    -F parent_commit_author_message="${parent_commit_message}" \
     -F base_dir="${base_dir}" \
     -s "${endpoint:-https://otterwise.app/ingress/upload}")
 
