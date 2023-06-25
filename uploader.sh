@@ -133,11 +133,6 @@ parseGitDiff() {
     printf "%s\n" "${lines[@]}"
 }
 
-# TODO GET BASE COMMIT, NOT MOST RECENT PARENT (IF PR)
-diffContent=$(git diff --unified=0 ${commit_sha} ${commit_parent})
-parsedDiff=$(parseGitDiff "$diffContent")
-echo "Parsed Git Diff: $parsedDiff"
-
 ########## CI ##########
 if test "${quiet:-0}" != "1"; then
     echo "Attempting to detect CI environment ..."
@@ -266,6 +261,19 @@ fi
 # todo azurePipelines
 # todo bitbucketCI
 
+
+
+########## GIT DIFF ##########
+if test "${ci_branch}" != "" AND test "${ci_base_branch}" != ""; then
+    base_commit_sha=$(git rev-list $(git rev-list --first-parent ^${ci_branch} ${ci_base_branch} | tail -n1)^^!)
+else
+    base_commit_sha=${commit_parent}
+fi
+
+diffContent=$(git diff --unified=0 ${base_commit_sha} ${commit_sha})
+parsedDiff=$(parseGitDiff "$diffContent")
+echo "Parsed Git Diff: $parsedDiff"
+
 ########## COVERAGE FILE ##########
 if test "${quiet:-0}" != "1"; then
     echo "Looking for coverage file ..."
@@ -337,6 +345,7 @@ if test "${quiet:-0}" != "1"; then
     echo "  CI Build: ${ci_build_number}"
     echo "  CI PR: ${ci_pr}"
     echo "  CI Head Commit: ${ci_head_commit}"
+    echo "  CI Base Commit: ${base_commit_sha}"
     echo "  CI Head Branch: ${ci_branch}"
     echo "  CI Base Branch: ${ci_base_branch}"
     echo "  CI Repo: ${ci_repo}"
