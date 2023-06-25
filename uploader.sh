@@ -104,51 +104,39 @@ if test "${quiet:-0}" != "1"; then
 fi
 
 # get and cleanup git diff
-function parseGitDiff() {
-    local diff=$1
-    local lines=()
-    local parsedDiff=()
-    local currentFile
-    local currentHunk
+parseGitDiff() {
+    local diff="$1"
+    IFS=$'\n' read -d '' -ra lines <<< "$diff"
+    local linesOfGitDiffInfo=0
 
-    IFS=$'\n' read -rd '' -a lines <<< "$diff"
+    for index in "${!lines[@]}"; do
+        line="${lines[$index]}"
 
-    for line in "${lines[@]}"; do
-        if [[ $line == 'diff --git'* ]]; then
-            # Start of a new file diff
-            currentFile=""
-            currentHunk=""
-            
-            if [[ $line =~ diff\ --git\ a/(.*)\ b/(.*) ]]; then
-                currentFile="${BASH_REMATCH[2]}"
-                declare -A currentFileArr=()
-                currentFileArr["lines"]=()
-                parsedDiff["$currentFile"]=currentFileArr
-            fi
-        elif [[ $line == '@@'* ]]; then
-            # Start of a hunk
-            currentHunk=""
-            
-            if [[ $line =~ @@\s+-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?\s+@@ ]]; then
-                currentHunkArr=()
-                currentHunkArr["oldStart"]="${BASH_REMATCH[1]}"
-                currentHunkArr["newStart"]="${BASH_REMATCH[3]}"
-                currentFileArr["hunks"]+=("$currentHunkArr")
-            fi
-        elif [[ -n $currentFile && -n $currentHunk ]]; then
-            # Line within a hunk
-            lineNumber=$((currentHunkArr["newStart"] + ${#currentFileArr["lines"]} + 1))
-            currentFileArr["lines"][$lineNumber]="$line"
+        if [[ $line == "diff --git a/"* ]]; then
+            linesOfGitDiffInfo=4
         fi
+
+        if [[ $linesOfGitDiffInfo -gt 0 ]]; then
+            ((linesOfGitDiffInfo--))
+            continue
+        fi
+
+        if [[ $line =~ ^(@@ -[0-9]{1,}(,[0-9]{1,}){0,1} \+[0-9]{1,}(,[0-9]{1,}) @@) ]]; then
+            echo "AAAA";
+            lines[$index]="${BASH_REMATCH[1]}"
+            continue
+        fi
+
+        lines[$index]="${line:0:1}"
     done
 
-    declare -p parsedDiff
+    printf "%s\n" "${lines[@]}"
 }
 
-diffContent=$(git diff | xargs)
+# Example usage
+diffContent=$(git diff --unified=0)
 parsedDiff=$(parseGitDiff "$diffContent")
-declare -p parsedDiff
-echo "Parsed git diff: ${parsedDiff}"
+echo "Parsed Git Diff: $parsedDiff"
 
 ########## CI ##########
 if test "${quiet:-0}" != "1"; then
