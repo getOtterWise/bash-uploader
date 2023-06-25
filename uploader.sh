@@ -279,21 +279,18 @@ fi
 
 ########## GIT DIFF ##########
 if [ "${branch_name}" != "" ] && [ "${ci_base_branch}" != "" ]; then
+    echo "REV LIST TEST w/ ${branch_name} ${ci_base_branch}"
+    echo $(git rev-list --first-parent ^${branch_name} ${ci_base_branch} | tail -n1)
     base_commit_sha=$(git rev-list $(git rev-list --first-parent ^${branch_name} ${ci_base_branch} | tail -n1)^^!)
 else
     base_commit_sha=${commit_parent}
 fi
 
 diffContent=$(git diff --unified=0 ${base_commit_sha} ${commit_sha})
-
-if test "${quiet:-0}" != "1"; then
-    echo "Original Git Diff: ${diffContent}"
-fi
-
 parsedDiff=$(parseGitDiff "$diffContent")
 
 if test "${quiet:-0}" != "1"; then
-    echo "Cleaned Git Diff: ${parsedDiff}"
+    echo "Wiped Git Diff: ${parsedDiff}"
 fi
 
 ########## COVERAGE FILE ##########
