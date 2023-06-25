@@ -27,6 +27,8 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+git diff HEAD^1 HEAD
+
 if test "${quiet:-0}" != "1"; then
         echo "Uploader Config:"
         echo "  --endpoint = ${endpoint}"
