@@ -367,11 +367,19 @@ if test "${quiet:-0}" != "1"; then
 fi
 
 if test "${quiet:-0}" != "1"; then
+    echo "Creating temporary file for git diff in _otterwise_diff_temp_.diff..."
+fi
+
+echo "$parsedDiff" > _otterwise_diff_temp_.diff
+
+
+if test "${quiet:-0}" != "1"; then
     echo "Uploading coverage ..."
 fi
 
 UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
     -F clover=@"${coverage_path}" \
+    -F diff=@"_otterwise_diff_temp_.diff" \
     -F ci_provider="${ci_detected}" \
     -F ci_job="${ci_job_id}" \
     -F ci_build="${ci_build_number}" \
@@ -394,6 +402,14 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
     -s "${endpoint:-https://otterwise.app/ingress/upload}")
 
 uploaded=$(grep -o 'Queued for processing' <<< "${UPLOAD_RESPONSE}")
+
+if test "${quiet:-0}" != "1"; then
+    echo "Deleting temporary git diff file from _otterwise_diff_temp_.diff..."
+fi
+
+rm _otterwise_diff_temp_.diff
+
+echo "$parsedDiff" > _otterwise_diff_temp_.diff
 
 if test "${uploaded}" == "Queued for processing"; then
     echo "  Coverage uploaded to OtterWise for processing!"
