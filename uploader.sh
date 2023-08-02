@@ -381,7 +381,7 @@ if [[ "$coverage_path" == *.xml.otterwise ]]; then
             fi
     else
             # Most likely Clover
-            awk -v base_dir="$base_dir" '/<class / { gsub(/(name|namespace)=\"[^\"]*\"/, "") } /<line / { gsub(/(name|visibility)=\"[^\"]*\"/, "") } /<file / { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
+            awk -v base_dir="$base_dir" '/<class / { gsub(/(name|namespace)="[^"]*"/, "") } /<line / { gsub(/(name|visibility)="[^"]*"/, "") } /<file / { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
             
             if test "${quiet:-0}" != "1"; then
                 echo "Stripped code and base directory from what was assumed to be a Clover Coverage File"
