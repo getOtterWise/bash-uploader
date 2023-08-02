@@ -352,6 +352,43 @@ if [[ -z "${repo_token}" ]]; then
     fi
 fi
 
+########## Make a copy of the coverage file ##########
+cp "${coverage_path}" "$coverage_path.otterwise"
+            
+if test "${quiet:-0}" != "1"; then
+    echo "Created copy of coverage file"
+fi
+
+# Switch to using the copy instead
+coverage_path="$coverage_path.otterwise"
+
+if test "${quiet:-0}" != "1"; then
+    echo "Switching coverage path to: ${coverage_path}.otterwise"
+fi
+
+########## STRIP CODE FROM COVERAGE ##########
+# Clover or Cobertura
+if [[ "$filename" == *.xml ]]; then
+    if grep -q "cobertura." "$coverage_path"; then
+            # Cobertura
+            awk -v base_dir="$base_dir" '/<package / { gsub(/name="[^"]*"/, "name=\"\"") }
+                                       /<class / { gsub(/name="[^"]*"/, "name=\"\"") }
+                                       /<method / { gsub(/name="[^"]*"/, "name=\"\"") }
+                                       /<source>/ { gsub(base_dir, "") } 1' "$input_file" > tmpfile && mv tmpfile "$input_file"
+                                                   
+            if test "${quiet:-0}" != "1"; then
+                echo "Stripped code and base directory from what was assumed to be a Cobertura Coverage File"
+            fi
+    else
+            # Most likely Clover
+            awk -v base_dir="$base_dir" '/<class / { gsub(/(name|namespace)=\"[^\"]*\"/, "") } /<line / { gsub(/(name|visibility)=\"[^\"]*\"/, "") } /<file / { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
+            
+            if test "${quiet:-0}" != "1"; then
+                echo "Stripped code and base directory from what was assumed to be a Clover Coverage File"
+            fi
+    fi
+fi
+
 # todo clean stuff we dont need
 if test "${quiet:-0}" != "1"; then
     echo "Detected data:"
