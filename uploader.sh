@@ -367,11 +367,17 @@ if test "${quiet:-0}" != "1"; then
 fi
 
 ########## STRIP CODE FROM COVERAGE ##########
+if [[ "${base_dir: -1}" != "/" ]]; then
+    base_dir_for_replacement="${base_dir}/"
+else
+    base_dir_for_replacement="${base_dir}"
+fi
+
 # Clover or Cobertura
 if [[ "$coverage_path" == *.xml.otterwise ]]; then
     if grep -q "cobertura." "$coverage_path"; then
             # Cobertura
-            awk -v base_dir="$base_dir" '/<package / { gsub(/name="[^"]*"/, "name=\"\"") }
+            awk -v base_dir="$base_dir_for_replacement/" '/<package / { gsub(/name="[^"]*"/, "name=\"\"") }
                                        /<class / { gsub(/name="[^"]*"/, "name=\"\"") }
                                        /<method / { gsub(/name="[^"]*"/, "name=\"\"") }
                                        /<source>/ { gsub(base_dir, "") } 1' "$input_file" > tmpfile && mv tmpfile "$input_file"
@@ -381,7 +387,7 @@ if [[ "$coverage_path" == *.xml.otterwise ]]; then
             fi
     else
             # Most likely Clover
-            awk -v base_dir="$base_dir" '/<class / { gsub(/(name|namespace)="[^"]*"/, "") } /<line / { gsub(/(name|visibility)="[^"]*"/, "") } /<file / { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
+            awk -v base_dir="$base_dir_for_replacement/" '/<class / { gsub(/(name|namespace)="[^"]*"/, "") } /<line / { gsub(/(name|visibility)="[^"]*"/, "") } /<file / { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
             
             if test "${quiet:-0}" != "1"; then
                 echo "Stripped code and base directory from what was assumed to be a Clover Coverage File"
