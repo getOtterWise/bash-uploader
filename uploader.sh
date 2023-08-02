@@ -74,10 +74,12 @@ fi
 head_commit_author_name=$(git log -1 --format="%an" ${commit_sha})
 head_commit_author_email=$(git log -1 --format="%ae" ${commit_sha})
 head_commit_message=$(git log -1 --format="%s" ${commit_sha})
+head_commit_date=$(git log -1 --format="%at" ${commit_sha})
 
 if test "${quiet:-0}" != "1"; then
     echo "    Commit Author: ${head_commit_author_name} <${head_commit_author_email}>"
     echo "    Commit Message: ${head_commit_message}"
+    echo "    Commit Date: ${head_commit_date}"
 fi
 
 # get first parent commit
@@ -92,15 +94,18 @@ if test "${commit_parent}" != ""; then
     parent_commit_author_name=$(git log -1 --format="%an" ${commit_parent})
     parent_commit_author_email=$(git log -1 --format="%ae" ${commit_parent})
     parent_commit_message=$(git log -1 --format="%s" ${commit_parent})
+    parent_commit_date=$(git log -1 --format="%at" ${commit_parent})
 else
     parent_commit_author_name=""
     parent_commit_author_email=""
     parent_commit_message="<<NO PARENT>>"
+    parent_commit_date=""
 fi
 
 if test "${quiet:-0}" != "1"; then
     echo "    Parent Commit Author: ${parent_commit_author_name} <${parent_commit_author_email}>"
     echo "    Parent Commit Message: ${parent_commit_message}"
+    echo "    Parent Commit Date: ${parent_commit_date}"
 fi
 
 # Git Diff Wiper / Cleaner
@@ -393,10 +398,12 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
     -F head_commit_author_name="${head_commit_author_name}" \
     -F head_commit_author_email="${head_commit_author_email}" \
     -F head_commit_author_message="${head_commit_message}" \
+    -F head_commit_author_date="${head_commit_date}" \
     -F parent_commit_sha="${commit_parent}" \
     -F parent_commit_author_name="${parent_commit_author_name}" \
     -F parent_commit_author_email="${parent_commit_author_email}" \
     -F parent_commit_author_message="${parent_commit_message}" \
+    -F parent_commit_author_date="${parent_commit_date}" \
     -F git_diff="${parsedDiff}" \
     -F base_dir="${base_dir}" \
     -s "${endpoint:-https://otterwise.app/ingress/upload}")
