@@ -259,7 +259,7 @@ if test "${quiet:-0}" != "1"; then
 fi
 
 # get first parent commit
-commit_parent=$(git rev-parse ${commit_sha}^1)
+commit_parent=$(git rev-parse $(git log -1 --pretty=format:'%H' | xargs)^1)
 
 if test "${quiet:-0}" != "1"; then
     echo "    Commit Parent: ${commit_parent}"
