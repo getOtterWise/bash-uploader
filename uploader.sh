@@ -363,12 +363,12 @@ fi
 coverage_path="$coverage_path.otterwise"
 
 if test "${quiet:-0}" != "1"; then
-    echo "Switching coverage path to: ${coverage_path}.otterwise"
+    echo "Switching coverage path to: ${coverage_path}"
 fi
 
 ########## STRIP CODE FROM COVERAGE ##########
 # Clover or Cobertura
-if [[ "$filename" == *.xml ]]; then
+if [[ "$coverage_path" == *.xml.otterwise ]]; then
     if grep -q "cobertura." "$coverage_path"; then
             # Cobertura
             awk -v base_dir="$base_dir" '/<package / { gsub(/name="[^"]*"/, "name=\"\"") }
