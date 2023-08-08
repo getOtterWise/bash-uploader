@@ -15,6 +15,9 @@ while [ $# -gt 0 ]; do
     -repo-token | --repo-token)
         repo_token="$2"
         ;;
+    -org-token | --org-token)
+        org_token="$2"
+        ;;
     -fail-on-errors | --stop-on-errors)
         fail_on_errors=1
         ;;
@@ -32,6 +35,7 @@ if test "${quiet:-0}" != "1"; then
         echo "  --endpoint = ${endpoint}"
         echo "  --file = ${file}"
         echo "  --repo-token = ${repo_token}"
+        echo "  --org-token = ${org_token}"
         echo "  --fail-on-errors = ${fail_on_errors}"
         echo "  --quiet = ${quiet}"
         echo "  --base-dir = ${base_dir}"
@@ -352,6 +356,19 @@ if [[ -z "${repo_token}" ]]; then
     fi
 fi
 
+
+if [[ -z "${org_token}" ]]; then
+    if test "${quiet:-0}" != "1"; then
+        echo "No --org-token set, getting from OTTERWISE_ORG_TOKEN environment variable"
+    fi
+
+    org_token=$(printenv OTTERWISE_ORG_TOKEN | xargs)
+
+    if test "${quiet:-0}" != "1"; then
+        echo "  Found: ${org_token}"
+    fi
+fi
+
 ########## Make a copy of the coverage file ##########
 cp "${coverage_path}" "$coverage_path.otterwise"
             
@@ -413,7 +430,6 @@ if test "${quiet:-0}" != "1"; then
     echo "  CI Head Branch: ${ci_branch}"
     echo "  CI Base Branch: ${ci_base_branch}"
     echo "  CI Repo: ${ci_repo}"
-    echo "  Repo Token: ${repo_token}"
     echo "  Base Dir: ${base_dir}"
     echo "  Endpoint: ${endpoint:-https://otterwise.app/ingress/upload}"
 fi
@@ -436,6 +452,7 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
     -F ci_job="${ci_job_id}" \
     -F ci_build="${ci_build_number}" \
     -F repo_token="${repo_token}" \
+    -F org_token="${org_token}" \
     -F git_repo="${ci_repo}" \
     -F git_pr="${ci_pr}" \
     -F git_head_commit="${ci_head_commit:-$commit_sha}" \
