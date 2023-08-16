@@ -120,6 +120,7 @@ ci_repo=""
 ci_branch=""
 ci_base_branch=""
 ci_head_commit=""
+ci_author=""
 if [ -n "$(printenv TRAVIS | xargs)" ]; then
     if test "${quiet:-0}" != "1"; then
         echo "  Detected TravisCI"
@@ -138,6 +139,8 @@ elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
     ci_base_branch="$(printenv GITHUB_BASE_REF | xargs)"
     ci_branch="$(printenv GITHUB_HEAD_REF | xargs)"
     ci_repo="$(printenv GITHUB_REPOSITORY | xargs)"
+
+    # consider usiing GITHUB_WORKSPACE for base_dir?
 
     github_ref="$(printenv GITHUB_REF | xargs)"
     github_event="$(printenv GITHUB_EVENT_NAME | xargs)"
@@ -205,6 +208,7 @@ elif [ -n "$(printenv CHIPPER | xargs)" ]; then
     ci_pr="$(printenv CI_COMMIT_TAG | xargs)" # todo figure out if this is correct (is it release, not PR?)
     ci_branch="$(printenv CI_COMMIT_BRANCH | xargs)"
     ci_clone_url="$(printenv CI_CLONE_URL | xargs)"
+    ci_author="$(printenv CI_COMMIT_USER | xargs)"
     
     if test "${quiet:-0}" != "1"; then
         echo "  Using Clone URL to detect repository: ${ci_clone_url}"
@@ -439,6 +443,7 @@ if test "${quiet:-0}" != "1"; then
     echo "  CI Head Branch: ${ci_branch}"
     echo "  CI Base Branch: ${ci_base_branch}"
     echo "  CI Repo: ${ci_repo}"
+    echo "  CI Author: ${ci_author}"
     echo "  Base Dir: ${base_dir}"
     echo "  Endpoint: ${endpoint:-https://otterwise.app/ingress/upload}"
 fi
@@ -460,6 +465,7 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
     -F ci_provider="${ci_detected}" \
     -F ci_job="${ci_job_id}" \
     -F ci_build="${ci_build_number}" \
+    -F ci_author="${ci_author}" \
     -F repo_token="${repo_token}" \
     -F org_token="${org_token}" \
     -F git_repo="${ci_repo}" \
