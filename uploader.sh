@@ -291,12 +291,21 @@ fi
 
 
 ########## GIT DIFF ##########
+if test "${quiet:-0}" != "1"; then
+    echo "Retrieving Git Diff ..."
+fi
+
 diffContent=$(git diff HEAD^1 HEAD --unified=0)
+
+if test "${quiet:-0}" != "1"; then
+    echo "    Wiping code from Git Diff ..."
+fi
+
 parsedDiff=$(parseGitDiff "$diffContent")
-    
-#if test "${quiet:-0}" != "1"; then
-#    echo "Wiped Git Diff: ${parsedDiff}" # Don't output this, as its messy
-#fi
+
+if test "${quiet:-0}" != "1"; then
+    echo "    Git Diff retrieved and wiped!"
+fi
 
 ########## COVERAGE FILE ##########
 if test "${quiet:-0}" != "1"; then
