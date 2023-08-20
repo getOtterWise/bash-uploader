@@ -349,6 +349,7 @@ if test "${quiet:-0}" != "1"; then
 fi
 
 ########## LOG FILE ##########
+# todo strip base dir!
 if test "${quiet:-0}" != "1"; then
     echo "Looking for log file ..."
 fi
