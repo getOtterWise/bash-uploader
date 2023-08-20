@@ -9,6 +9,9 @@ while [ $# -gt 0 ]; do
     -file | --file)
         file="$2"
         ;;
+    -log-file | --log-file)
+        log_file="$2"
+        ;;
     -quiet | --quiet)
         quiet=1
         ;;
@@ -34,6 +37,7 @@ if test "${quiet:-0}" != "1"; then
         echo "Uploader Config:"
         echo "  --endpoint = ${endpoint}"
         echo "  --file = ${file}"
+        echo "  --log-file = ${log_file}"
         echo "  --repo-token = ${repo_token}"
         echo "  --org-token = ${org_token}"
         echo "  --fail-on-errors = ${fail_on_errors}"
@@ -344,6 +348,27 @@ if test "${quiet:-0}" != "1"; then
     echo "  Found at ${coverage_path}"
 fi
 
+########## LOG FILE ##########
+if test "${quiet:-0}" != "1"; then
+    echo "Looking for log file ..."
+fi
+if test "$log_file" == ""; then
+    if [ -f "build/logs/junit-log.xml" ]; then
+        log_file_path="build/logs/junit-log.xml"
+    else
+        echo "  Could not determine log file path, skipipnig"
+    fi
+else
+    if [ ! -f "${log_file}" ]; then
+        echo "  Passed --file '${log_file}' does not exist."
+    fi
+    log_file_path="${log_file}"
+fi
+
+if test "${quiet:-0}" != "1"; then
+    echo "  Found at ${log_file_path}"
+fi
+
 ########## INFO ##########
 if test "$base_dir" == ""; then
     if test "${quiet:-0}" != "1"; then
@@ -461,6 +486,7 @@ fi
 
 UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
     -F clover=@"${coverage_path}" \
+    -F log_file=@"${log_file_path}" \
     -F diff=@"_otterwise_diff_temp_.diff" \
     -F ci_provider="${ci_detected}" \
     -F ci_job="${ci_job_id}" \
