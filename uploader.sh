@@ -355,18 +355,18 @@ fi
 if test "$log_file" == ""; then
     if [ -f "build/logs/junit-log.xml" ]; then
         log_file_path="build/logs/junit-log.xml"
+
+        if test "${quiet:-0}" != "1"; then
+            echo "  Found at ${log_file_path}"
+        fi
     else
-        echo "  Could not determine log file path, skipipnig"
+        echo "  Could not determine log file path, skipping"
     fi
 else
     if [ ! -f "${log_file}" ]; then
         echo "  Passed --file '${log_file}' does not exist."
     fi
     log_file_path="${log_file}"
-fi
-
-if test "${quiet:-0}" != "1"; then
-    echo "  Found at ${log_file_path}"
 fi
 
 ########## INFO ##########
