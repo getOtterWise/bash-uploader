@@ -484,9 +484,13 @@ if test "${quiet:-0}" != "1"; then
     echo "Uploading coverage ..."
 fi
 
+optionalArgs=()
+if test "$log_file_path" != ""; then
+    optionalArgs+=(-F log_file=@"${log_file_path}")
+fi
+
 UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
     -F clover=@"${coverage_path}" \
-    -F log_file=@"${log_file_path}" \
     -F diff=@"_otterwise_diff_temp_.diff" \
     -F ci_provider="${ci_detected}" \
     -F ci_job="${ci_job_id}" \
@@ -510,6 +514,7 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
     -F parent_commit_author_message="${parent_commit_message}" \
     -F parent_commit_author_date="${parent_commit_date}" \
     -F base_dir="${base_dir}" \
+    "${optionalArgs[@]}" \
     -s "${endpoint:-https://otterwise.app/ingress/upload}")
 
 uploaded=$(grep -o 'Queued for processing' <<< "${UPLOAD_RESPONSE}")
