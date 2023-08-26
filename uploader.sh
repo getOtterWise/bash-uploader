@@ -360,6 +360,18 @@ if test "$log_file" == ""; then
         if test "${quiet:-0}" != "1"; then
             echo "  Found at ${log_file_path}"
         fi
+    elif [ -f "phpunit/junit.xml" ]; then
+        log_file_path="phpunit/junit.xml"
+
+        if test "${quiet:-0}" != "1"; then
+            echo "  Found at ${log_file_path}"
+        fi
+    elif [ -f "build/logs/junit.xml" ]; then
+        log_file_path="build/logs/junit.xml"
+
+        if test "${quiet:-0}" != "1"; then
+            echo "  Found at ${log_file_path}"
+        fi
     else
         echo "  Could not determine log file path, skipping"
     fi
