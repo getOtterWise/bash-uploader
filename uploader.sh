@@ -348,6 +348,19 @@ if test "${quiet:-0}" != "1"; then
     echo "  Found at ${coverage_path}"
 fi
 
+########## CONFIG FILE ##########
+ if [ -f ".otterwise.yml" ]; then
+    config_path=".otterwise.yml"
+        
+    if test "${quiet:-0}" != "1"; then
+        echo "Found config file, will be used for overwriting repository and organization settings."
+    fi
+else
+    if test "${quiet:-0}" != "1"; then
+        echo "No config file found, using repository and organization settings."
+    fi
+fi
+
 ########## LOG FILE ##########
 # todo strip base dir!
 if test "${quiet:-0}" != "1"; then
@@ -500,6 +513,10 @@ fi
 optionalArgs=()
 if test "$log_file_path" != ""; then
     optionalArgs+=(-F log_file=@"${log_file_path}")
+fi
+
+if test "$config_path" != ""; then
+    optionalArgs+=(-F config_file=@"${config_path}")
 fi
 
 UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
