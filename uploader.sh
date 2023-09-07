@@ -9,6 +9,9 @@ while [ $# -gt 0 ]; do
     -file | --file)
         file="$2"
         ;;
+    -mutation-file | --mutation-file)
+        mutation_file="$2"
+        ;;
     -log-file | --log-file)
         log_file="$2"
         ;;
@@ -37,6 +40,7 @@ if test "${quiet:-0}" != "1"; then
         echo "Uploader Config:"
         echo "  --endpoint = ${endpoint}"
         echo "  --file = ${file}"
+        echo "  --mutation-file = ${mutation_file}"
         echo "  --log-file = ${log_file}"
         echo "  --repo-token = ${repo_token}"
         echo "  --org-token = ${org_token}"
@@ -517,6 +521,10 @@ fi
 
 if test "$config_path" != ""; then
     optionalArgs+=(-F config_file=@"${config_path}")
+fi
+
+if test "$mutation_file" != ""; then
+    optionalArgs+=(-F mutation_file=@"${mutation_file}")
 fi
 
 UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
