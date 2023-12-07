@@ -524,6 +524,14 @@ if test "$config_path" != ""; then
 fi
 
 if test "$mutation_file" != ""; then
+    if test "${quiet:-0}" != "1"; then
+        echo "Mutation file specified"
+    fi
+    
+    if test "${quiet:-0}" != "1"; then
+        echo "  Stripping code ..."
+    fi
+
     # Remove code from Mutation log file (Infection)
     jq '(.escaped |= map(del(.mutator.mutatedSourceCode))) | (.timeouted |= map(del(.mutator.mutatedSourceCode))) | (.killed |= map(del(.mutator.mutatedSourceCode))) | (.errored |= map(del(.mutator.mutatedSourceCode))) | (.syntaxErrors |= map(del(.mutator.mutatedSourceCode))) | (.uncovered |= map(del(.mutator.mutatedSourceCode))) | (.ignored |= map(del(.mutator.mutatedSourceCode)))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
     jq '(.escaped |= map(del(.mutator.originalSourceCode))) | (.timeouted |= map(del(.mutator.originalSourceCode))) | (.killed |= map(del(.mutator.originalSourceCode))) | (.errored |= map(del(.mutator.originalSourceCode))) | (.syntaxErrors |= map(del(.mutator.originalSourceCode))) | (.uncovered |= map(del(.mutator.originalSourceCode))) | (.ignored |= map(del(.mutator.originalSourceCode)))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
@@ -532,11 +540,19 @@ if test "$mutation_file" != ""; then
     jq '.escaped |= map(del(.processOutput)) | .timeouted |= map(del(.processOutput)) | .killed |= map(del(.processOutput)) | .errored |= map(del(.processOutput)) | .syntaxErrors |= map(del(.processOutput)) | .uncovered |= map(del(.processOutput)) | .ignored |= map(del(.processOutput))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
     jq '.escaped |= map(del(.diff)) | .timeouted |= map(del(.diff)) | .killed |= map(del(.diff)) | .errored |= map(del(.diff)) | .syntaxErrors |= map(del(.diff)) | .uncovered |= map(del(.diff)) | .ignored |= map(del(.diff))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
 
+    if test "${quiet:-0}" != "1"; then
+        echo "  Replacing base_dir ..."
+    fi
+    
     # Remove base dir from Mutation log file (Infection)
     jq --arg homePath "$base_dir" '.escaped |= map(.mutator.originalFilePath |= sub($homePath; "")) | .timeouted |= map(.mutator.originalFilePath |= sub($homePath; "")) | .killed |= map(.mutator.originalFilePath |= sub($homePath; "")) | .errored |= map(.mutator.originalFilePath |= sub($homePath; "")) | .syntaxErrors |= map(.mutator.originalFilePath |= sub($homePath; "")) | .uncovered |= map(.mutator.originalFilePath |= sub($homePath; "")) | .ignored |= map(.mutator.originalFilePath |= sub($homePath; ""))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
 
     # Add mutation file to upload
-    optionalArgs+=(-F mutation_file=@"${mutation_file}")
+    optionalArgs+=(-F mutation_file=@"${mutation_file}")'.escaped |= map(del(.diff)) | .timeouted |= map(del(.diff)) | .killed |= map(del(.diff)) | .errored |= map(del(.diff)) | .syntaxErrors |= map(del(.diff)) | .uncovered |= map(del(.diff)) | .ignored |= map(del(.diff))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
+
+    if test "${quiet:-0}" != "1"; then
+        echo "  Prepared for upload!"
+    fi
 fi
 
 UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
