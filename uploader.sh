@@ -524,6 +524,18 @@ if test "$config_path" != ""; then
 fi
 
 if test "$mutation_file" != ""; then
+    # Remove code from Mutation log file (Infection)
+    jq --arg field "mutatedSourceCode" '.escaped |= map(del(.mutator.[$field])) | .timeouted |= map(del(.mutator.[$field])) | .killed |= map(del(.mutator.[$field])) | .errored |= map(del(.mutator.[$field])) | .syntaxErrors |= map(del(.mutator.[$field])) | .uncovered |= map(del(.mutator.[$field])) | .ignored |= map(del(.mutator.[$field]))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
+    jq --arg field "originalSourceCode" '.escaped |= map(del(.mutator.[$field])) | .timeouted |= map(del(.mutator.[$field])) | .killed |= map(del(.mutator.[$field])) | .errored |= map(del(.mutator.[$field])) | .syntaxErrors |= map(del(.mutator.[$field])) | .uncovered |= map(del(.mutator.[$field])) | .ignored |= map(del(.mutator.[$field]))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
+    jq --arg field "originalStartLine" '.escaped |= map(del(.mutator.[$field])) | .timeouted |= map(del(.mutator.[$field])) | .killed |= map(del(.mutator.[$field])) | .errored |= map(del(.mutator.[$field])) | .syntaxErrors |= map(del(.mutator.[$field])) | .uncovered |= map(del(.mutator.[$field])) | .ignored |= map(del(.mutator.[$field]))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
+    jq --arg field "mutatedStartLine" '.escaped |= map(del(.mutator.[$field])) | .timeouted |= map(del(.mutator.[$field])) | .killed |= map(del(.mutator.[$field])) | .errored |= map(del(.mutator.[$field])) | .syntaxErrors |= map(del(.mutator.[$field])) | .uncovered |= map(del(.mutator.[$field])) | .ignored |= map(del(.mutator.[$field]))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
+    jq --arg field "processOutput" '.escaped |= map(del(.[$field])) | .timeouted |= map(del(.[$field])) | .killed |= map(del(.[$field])) | .errored |= map(del(.[$field])) | .syntaxErrors |= map(del(.[$field])) | .uncovered |= map(del(.[$field])) | .ignored |= map(del(.[$field]))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
+    jq --arg field "diff" '.escaped |= map(del(.[$field])) | .timeouted |= map(del(.[$field])) | .killed |= map(del(.[$field])) | .errored |= map(del(.[$field])) | .syntaxErrors |= map(del(.[$field])) | .uncovered |= map(del(.[$field])) | .ignored |= map(del(.[$field]))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
+    
+    # Remove base dir from Mutation log file (Infection)
+    jq --arg homePath "$base_dir" '.escaped |= map(.mutator.originalFilePath |= sub($homePath; "")) | .timeouted |= map(.mutator.originalFilePath |= sub($homePath; "")) | .killed |= map(.mutator.originalFilePath |= sub($homePath; "")) | .errored |= map(.mutator.originalFilePath |= sub($homePath; "")) | .syntaxErrors |= map(.mutator.originalFilePath |= sub($homePath; "")) | .uncovered |= map(.mutator.originalFilePath |= sub($homePath; "")) | .ignored |= map(.mutator.originalFilePath |= sub($homePath; ""))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
+
+    # Add mutation file to upload
     optionalArgs+=(-F mutation_file=@"${mutation_file}")
 fi
 
