@@ -555,7 +555,7 @@ if test "$mutation_file" != ""; then
     cat ${mutation_file} | jq -c > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
 
     # Add mutation file to upload
-    optionalArgs+=(-F mutation_file=@"${mutation_file}")'.escaped |= map(del(.diff)) | .timeouted |= map(del(.diff)) | .killed |= map(del(.diff)) | .errored |= map(del(.diff)) | .syntaxErrors |= map(del(.diff)) | .uncovered |= map(del(.diff)) | .ignored |= map(del(.diff))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
+    optionalArgs+=(-F mutation_file=@"${mutation_file}")
 
     if test "${quiet:-0}" != "1"; then
         echo "  Prepared for upload!"
