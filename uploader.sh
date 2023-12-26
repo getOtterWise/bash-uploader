@@ -12,6 +12,9 @@ while [ $# -gt 0 ]; do
     -mutation-file | --mutation-file)
         mutation_file="$2"
         ;;
+    -type-coverage-file | --type-coverage-file)
+        type_coverage_file="$2"
+        ;;
     -log-file | --log-file)
         log_file="$2"
         ;;
@@ -41,6 +44,7 @@ if test "${quiet:-0}" != "1"; then
         echo "  --endpoint = ${endpoint}"
         echo "  --file = ${file}"
         echo "  --mutation-file = ${mutation_file}"
+        echo "  --type-coverage-file = ${type_coverage_file}"
         echo "  --log-file = ${log_file}"
         echo "  --repo-token = ${repo_token}"
         echo "  --org-token = ${org_token}"
@@ -560,6 +564,22 @@ if test "$mutation_file" != ""; then
 
     if test "${quiet:-0}" != "1"; then
         echo "  Prepared for upload!"
+    fi
+fi
+
+if test "$type_coverage_file" != ""; then
+    if test "${quiet:-0}" != "1"; then
+        echo "Type Coverage file specified"
+    fi
+
+    # Ensure is Pest PHP format
+    if jq -e '.format == "pest"' "${type_coverage_file}" > /dev/null 2>&1; then
+        if test "${quiet:-0}" != "1"; then
+            echo "  Format is Pest PHP"
+        fi
+            
+        # Add type coverage file to upload
+        optionalArgs+=(-F type_coverage_file=@"${type_coverage_file}")
     fi
 fi
 
