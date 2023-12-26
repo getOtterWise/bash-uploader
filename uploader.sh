@@ -371,10 +371,11 @@ fi
 
 ########## LOG FILE ##########
 # todo strip base dir!
-if test "${quiet:-0}" != "1"; then
-    echo "Looking for log file ..."
-fi
 if test "$log_file" == ""; then
+    if test "${quiet:-0}" != "1"; then
+        echo "Looking for log file ..."
+    fi
+
     if [ -f "build/logs/junit-log.xml" ]; then
         log_file_path="build/logs/junit-log.xml"
 
@@ -393,12 +394,12 @@ if test "$log_file" == ""; then
         if test "${quiet:-0}" != "1"; then
             echo "  Found at ${log_file_path}"
         fi
-    else
+    elif test "${quiet:-0}" != "1"; then
         echo "  Could not determine log file path, skipping"
     fi
 else
     if [ ! -f "${log_file}" ]; then
-        echo "  Passed --file '${log_file}' does not exist."
+        echo "Passed --file '${log_file}' does not exist."
     fi
     log_file_path="${log_file}"
 fi
@@ -484,28 +485,7 @@ if [[ "$coverage_path" == *.xml.otterwise ]]; then
     fi
 fi
 
-# todo clean stuff we dont need
-if test "${quiet:-0}" != "1"; then
-    echo "Detected data:"
-    echo "  Git Branch: ${branch_name}"
-    echo "  Git Commit Sha: ${commit_sha}"
-    echo "  Git Commit Author: ${head_commit_author_name} (${head_commit_author_email})"
-    echo "  Git Commit Message: ${head_commit_message}"
-    echo "  Git Parent Commit Sha: ${commit_parent}"
-    echo "  Git Parent Commit Author: ${parent_commit_author_name} (${parent_commit_author_email})"    
-    echo "  Git Parent Commit Message: ${parent_commit_message}"
-    echo "  CI Provider: ${ci_detected}"
-    echo "  CI JOB: ${ci_job_id}"
-    echo "  CI Build: ${ci_build_number}"
-    echo "  CI PR: ${ci_pr}"
-    echo "  CI Head Commit: ${ci_head_commit}"
-    echo "  CI Head Branch: ${ci_branch}"
-    echo "  CI Base Branch: ${ci_base_branch}"
-    echo "  CI Repo: ${ci_repo}"
-    echo "  CI Author: ${ci_author}"
-    echo "  Base Dir: ${base_dir}"
-    echo "  Endpoint: ${endpoint:-https://otterwise.app/ingress/upload}"
-fi
+
 
 if test "${quiet:-0}" != "1"; then
     echo "Creating temporary file for git diff in _otterwise_diff_temp_.diff..."
@@ -513,10 +493,6 @@ fi
 
 echo "$parsedDiff" > _otterwise_diff_temp_.diff
 
-
-if test "${quiet:-0}" != "1"; then
-    echo "Uploading coverage ..."
-fi
 
 optionalArgs=()
 if test "$log_file_path" != ""; then
@@ -581,6 +557,38 @@ if test "$type_coverage_file" != ""; then
         # Add type coverage file to upload
         optionalArgs+=(-F type_coverage_file=@"${type_coverage_file}")
     fi
+fi
+
+# todo clean stuff we dont need
+if test "${quiet:-0}" != "1"; then
+    echo "Detected data:"
+    echo "  Git Branch: ${branch_name}"
+    echo "  Git Commit Sha: ${commit_sha}"
+    echo "  Git Commit Author: ${head_commit_author_name} (${head_commit_author_email})"
+    echo "  Git Commit Message: ${head_commit_message}"
+    echo "  Git Parent Commit Sha: ${commit_parent}"
+    echo "  Git Parent Commit Author: ${parent_commit_author_name} (${parent_commit_author_email})"    
+    echo "  Git Parent Commit Message: ${parent_commit_message}"
+    echo "  CI Provider: ${ci_detected}"
+    echo "  CI JOB: ${ci_job_id}"
+    echo "  CI Build: ${ci_build_number}"
+    echo "  CI PR: ${ci_pr}"
+    echo "  CI Head Commit: ${ci_head_commit}"
+    echo "  CI Head Branch: ${ci_branch}"
+    echo "  CI Base Branch: ${ci_base_branch}"
+    echo "  CI Repo: ${ci_repo}"
+    echo "  CI Author: ${ci_author}"
+    echo "  Base Dir: ${base_dir}"
+    echo "  Endpoint: ${endpoint:-https://otterwise.app/ingress/upload}"
+    echo "  Log File: ${log_file_path}"
+    echo "  Config File: ${config_path}"
+    echo "  Type Coverage File: ${type_coverage_file}"
+    echo "  Test Coverage File: ${coverage_path}"
+    echo "  Mutation Coverage File: ${mutation_file}"
+fi
+
+if test "${quiet:-0}" != "1"; then
+    echo "Uploading coverage ..."
 fi
 
 UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
