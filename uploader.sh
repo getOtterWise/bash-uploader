@@ -559,6 +559,19 @@ if test "$type_coverage_file" != ""; then
         # Add type coverage file to upload
         optionalArgs+=(-F type_coverage_file=@"${type_coverage_file}")
     fi
+else
+    # Attempt to locate Type Coverage files manually
+    if [ -f "pest-type-coverage.json" ]; then
+        # Ensure is Pest PHP format
+        if jq -e '.format == "pest"' "${type_coverage_file}" > /dev/null 2>&1; then
+            if test "${quiet:-0}" != "1"; then
+                echo "  Format is Pest PHP"
+            fi
+                
+            # Add type coverage file to upload
+            optionalArgs+=(-F type_coverage_file=@"${type_coverage_file}")
+        fi
+    fi
 fi
 
 # todo clean stuff we dont need
