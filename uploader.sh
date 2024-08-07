@@ -574,6 +574,18 @@ else
             optionalArgs+=(-F type_coverage_file=@"${type_coverage_file}")
             optionalArgs+=(-F type_coverage_format="${type_coverage_format}")
         fi
+    elif [ -f "build/logs/pest-type-coverage.json" ]; then
+        # Ensure is Pest PHP format
+        if jq -e '.format == "pest"' "${type_coverage_file}" > /dev/null 2>&1; then
+            if test "${quiet:-0}" != "1"; then
+                echo "  Format is Pest PHP"
+                type_coverage_format="pest-php"
+            fi
+                
+            # Add type coverage file to upload
+            optionalArgs+=(-F type_coverage_file=@"${type_coverage_file}")
+            optionalArgs+=(-F type_coverage_format="${type_coverage_format}")
+        fi
     fi
 fi
 
