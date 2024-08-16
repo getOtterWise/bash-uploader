@@ -470,6 +470,7 @@ if [[ "$coverage_path" == *.xml.otterwise ]]; then
             awk -v base_dir="$base_dir_for_replacement" '/<package / { gsub(/name="[^"]*"/, "name=\"\"") }
                                        /<class / { gsub(/name="[^"]*"/, "name=\"\"") }
                                        /<method / { gsub(/name="[^"]*"/, "name=\"\"") }
+                                       /<method / { gsub(/signature="[^"]*"/, "signature=\"\"") }
                                        /<source>/ { gsub(base_dir, "") } 1' "$input_file" > tmpfile && mv tmpfile "$input_file"
                                                    
             if test "${quiet:-0}" != "1"; then
