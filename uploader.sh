@@ -471,7 +471,7 @@ if [[ "$coverage_path" == *.xml.otterwise ]]; then
                                        /<class / { gsub(/name="[^"]*"/, "name=\"\"") }
                                        /<method / { gsub(/name="[^"]*"/, "name=\"\"") }
                                        /<method / { gsub(/signature="[^"]*"/, "signature=\"\"") }
-                                       /<source>/ { gsub(base_dir, "") } 1' "$input_file" > tmpfile && mv tmpfile "$input_file"
+                                       /<source>/ { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
                                                    
             if test "${quiet:-0}" != "1"; then
                 echo "Stripped code and base directory from what was assumed to be a Cobertura Coverage File"
