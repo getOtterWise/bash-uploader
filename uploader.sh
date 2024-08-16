@@ -467,9 +467,7 @@ fi
 if [[ "$coverage_path" == *.xml.otterwise ]]; then
     if grep -q "cobertura." "$coverage_path"; then
             # Cobertura
-            awk -v base_dir="$base_dir_for_replacement" '/<package / { gsub(/name="[^"]*"/, "name=\"\"") }
-                                       /<class / { gsub(/name="[^"]*"/, "name=\"\"") }
-                                       /<method / { gsub(/name="[^"]*"/, "name=\"\"") }
+            awk -v base_dir="$base_dir_for_replacement" '/<method / { gsub(/name="[^"]*"/, "name=\"\"") }
                                        /<method / { gsub(/signature="[^"]*"/, "signature=\"\"") }
                                        /<source>/ { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
                                                    
