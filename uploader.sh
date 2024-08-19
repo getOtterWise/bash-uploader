@@ -30,6 +30,9 @@ while [ $# -gt 0 ]; do
     -fail-on-errors | --stop-on-errors)
         fail_on_errors=1
         ;;
+    -flag | --flag)
+        flag="$2"
+        ;;
     -base-dir | --base-dir)
         base_dir="$2"
         ;;
@@ -51,6 +54,7 @@ if test "${quiet:-0}" != "1"; then
         echo "  --fail-on-errors = ${fail_on_errors}"
         echo "  --quiet = ${quiet}"
         echo "  --base-dir = ${base_dir}"
+        echo "  --flag = ${flag}"
 fi
 
 ########## GIT ##########
@@ -588,7 +592,11 @@ else
     fi
 fi
 
-# todo clean stuff we dont need
+# Add flag
+if test "$flag" != ""; then
+    optionalArgs+=(-F flag="${flag}")
+fi
+
 if test "${quiet:-0}" != "1"; then
     echo "Detected data:"
     echo "  Git Branch: ${branch_name}"
@@ -615,6 +623,7 @@ if test "${quiet:-0}" != "1"; then
     echo "  Type Coverage Format: ${type_coverage_format}"
     echo "  Test Coverage File: ${coverage_path}"
     echo "  Mutation Coverage File: ${mutation_file}"
+    echo "  Flag: ${flag}"
 fi
 
 if test "${quiet:-0}" != "1"; then
