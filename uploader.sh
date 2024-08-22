@@ -165,10 +165,18 @@ elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
         if test "${quiet:-0}" != "1"; then
             echo "  Found Pull Request"
         fi
+    
+        if test "${quiet:-0}" != "1"; then
+            echo "  Using GITHUB_EVENT_PATH for parsing Pull Request number"
+        fi
 
         ci_pr=$(jq --raw-output .number "$GITHUB_EVENT_PATH")
         
-        if test "$ci_pr" == ""; then
+        if [[ -z "$ci_pr" || ! "$ci_pr" =~ ^[0-9]+$ ]]; then
+            if test "${quiet:-0}" != "1"; then
+                echo "  Using refs for parsing Pull Request number"
+            fi
+            
             IFS='/'
             read -r -a refs <<<"${github_ref}"
             ci_pr="${refs[2]}"
