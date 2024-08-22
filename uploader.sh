@@ -168,6 +168,10 @@ elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
         IFS='/'
         read -r -a refs <<<"${github_ref}"
         ci_pr="${refs[2]}"
+        echo "${refs[0]}"
+        echo "${refs[1]}"
+        echo "${refs[2]}"
+        echo "${refs[3]}"
 
         merge_message="$(git show --no-patch --format=%P | xargs)"
 
