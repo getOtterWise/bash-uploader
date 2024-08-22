@@ -165,11 +165,14 @@ elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
         if test "${quiet:-0}" != "1"; then
             echo "  Found Pull Request"
         fi
-        IFS='/'
-        read -r -a refs <<<"${github_ref}"
-        ci_pr="${refs[2]}"
-        echo $(jq --raw-output .number "$GITHUB_EVENT_PATH")
+
         ci_pr=$(jq --raw-output .number "$GITHUB_EVENT_PATH")
+        
+        if test "$ci_pr" == ""; then
+            IFS='/'
+            read -r -a refs <<<"${github_ref}"
+            ci_pr="${refs[2]}"
+        fi
 
         merge_message="$(git show --no-patch --format=%P | xargs)"
 
