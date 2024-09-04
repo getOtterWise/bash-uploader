@@ -347,6 +347,8 @@ fi
 if test "$file" == ""; then
     if [ -f "build/logs/clover.xml" ]; then
         coverage_path="build/logs/clover.xml"
+    elif [ -f "otterwise-coverage.xml" ]; then
+        coverage_path="otterwise-coverage.xml"
     elif [ -f "build/logs/cobertura.xml" ]; then
         coverage_path="build/logs/cobertura.xml"
     else
