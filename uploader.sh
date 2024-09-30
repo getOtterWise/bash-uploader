@@ -581,6 +581,11 @@ if test "$type_coverage_file" != ""; then
 else
     # Attempt to locate Type Coverage files manually
     if [ -f "pest-type-coverage.json" ]; then
+        if test "${quiet:-0}" != "1"; then
+            echo "  Found pest-type-coverage.json, checking..."
+        fi
+        type_coverage_file="pest-type-coverage.json"
+        
         # Ensure is Pest PHP format
         if jq -e '.format == "pest"' "${type_coverage_file}" > /dev/null 2>&1; then
             if test "${quiet:-0}" != "1"; then
@@ -593,6 +598,11 @@ else
             optionalArgs+=(-F type_coverage_format="${type_coverage_format}")
         fi
     elif [ -f "build/logs/pest-type-coverage.json" ]; then
+        if test "${quiet:-0}" != "1"; then
+            echo "  Found build/logs/pest-type-coverage.json, checking..."
+        fi
+        type_coverage_file="build/logs/pest-type-coverage.json"
+        
         # Ensure is Pest PHP format
         if jq -e '.format == "pest"' "${type_coverage_file}" > /dev/null 2>&1; then
             if test "${quiet:-0}" != "1"; then
