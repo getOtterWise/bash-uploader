@@ -351,6 +351,8 @@ if test "$file" == ""; then
         coverage_path="otterwise-coverage.xml"
     elif [ -f "build/logs/cobertura.xml" ]; then
         coverage_path="build/logs/cobertura.xml"
+    elif [ -f "coverage/lcov.info" ]; then
+        coverage_path="coverage/lcov.info"
     else
         echo "  Could not determine Coverage file path, please verify that the file exists. Alternatively pass it with --file [PATH]"
         if test "${fail_on_errors:-0}" != "0"; then
