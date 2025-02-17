@@ -496,7 +496,9 @@ if [[ "$coverage_path" == *.xml.otterwise ]]; then
             echo "Stripped code and base directory from what was assumed to be a Cobertura Coverage File"
         fi
     elif grep -q "SF:" "$coverage_path" && grep -q "end_of_record" "$coverage_path"; then
-        # LCOV, nothing to do, contains no code :)
+        if test "${quiet:-0}" != "1"; then
+            echo "File is LCOV, nothing to do here"
+        fi
     else
         # Most likely Clover
         awk -v base_dir="$base_dir_for_replacement" '/<class / { gsub(/(name|namespace)="[^"]*"/, "") } /<line / { gsub(/(name|visibility)="[^"]*"/, "") } /<file / { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
