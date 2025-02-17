@@ -482,24 +482,26 @@ else
     base_dir_for_replacement="${base_dir}"
 fi
 
-# Clover or Cobertura
+# Clover, Cobertura or LCOV
 if [[ "$coverage_path" == *.xml.otterwise ]]; then
     if grep -q "cobertura." "$coverage_path"; then
-            # Cobertura
-            awk -v base_dir="$base_dir_for_replacement" '/<method / { gsub(/name="[^"]*"/, "name=\"\"") }
-                                       /<method / { gsub(/signature="[^"]*"/, "signature=\"\"") }
-                                       /<source>/ { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
-                                                   
-            if test "${quiet:-0}" != "1"; then
-                echo "Stripped code and base directory from what was assumed to be a Cobertura Coverage File"
-            fi
+        # Cobertura
+        awk -v base_dir="$base_dir_for_replacement" '/<method / { gsub(/name="[^"]*"/, "name=\"\"") }
+                                   /<method / { gsub(/signature="[^"]*"/, "signature=\"\"") }
+                                   /<source>/ { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
+                                               
+        if test "${quiet:-0}" != "1"; then
+            echo "Stripped code and base directory from what was assumed to be a Cobertura Coverage File"
+        fi
+    elif grep -q "SF:" "$coverage_path" && grep -q "end_of_record" "$coverage_path"; then
+        # LCOV, nothing to do, contains no code :)
     else
-            # Most likely Clover
-            awk -v base_dir="$base_dir_for_replacement" '/<class / { gsub(/(name|namespace)="[^"]*"/, "") } /<line / { gsub(/(name|visibility)="[^"]*"/, "") } /<file / { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
-            
-            if test "${quiet:-0}" != "1"; then
-                echo "Stripped code and base directory from what was assumed to be a Clover Coverage File"
-            fi
+        # Most likely Clover
+        awk -v base_dir="$base_dir_for_replacement" '/<class / { gsub(/(name|namespace)="[^"]*"/, "") } /<line / { gsub(/(name|visibility)="[^"]*"/, "") } /<file / { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
+        
+        if test "${quiet:-0}" != "1"; then
+            echo "Stripped code and base directory from what was assumed to be a Clover Coverage File"
+        fi
     fi
 fi
 
