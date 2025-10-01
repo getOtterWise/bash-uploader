@@ -661,7 +661,7 @@ if test "${quiet:-0}" != "1"; then
     echo "Uploading coverage ..."
 fi
 
-UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
+if ! UPLOAD_RESPONSE=$(curl --fail --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
     -F clover=@"${coverage_path}" \
     -F diff=@"_otterwise_diff_temp_.diff" \
     -F ci_provider="${ci_detected}" \
@@ -687,7 +687,40 @@ UPLOAD_RESPONSE=$(curl --connect-timeout 5 --retry 3 --retry-max-time 60 --retry
     -F parent_commit_author_date="${parent_commit_date}" \
     -F base_dir="${base_dir}" \
     "${optionalArgs[@]}" \
-    -s "${endpoint:-https://otterwise.app/ingress/upload}")
+    -s "${endpoint:-https://otterwise.app/ingress/upload}"); then
+
+    if test "${quiet:-0}" != "1"; then
+        echo "Main upload endpoint failed after retries, using fallback endpoint"
+    fi
+    
+    UPLOAD_RESPONSE=$(curl --fail --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
+        -F clover=@"${coverage_path}" \
+        -F diff=@"_otterwise_diff_temp_.diff" \
+        -F ci_provider="${ci_detected}" \
+        -F ci_job="${ci_job_id}" \
+        -F ci_build="${ci_build_number}" \
+        -F ci_author="${ci_author}" \
+        -F repo_token="${repo_token}" \
+        -F org_token="${org_token}" \
+        -F git_repo="${ci_repo}" \
+        -F git_pr="${ci_pr}" \
+        -F git_head_commit="${ci_head_commit:-$commit_sha}" \
+        -F git_base_branch="${ci_base_branch}" \
+        -F git_head_branch="${ci_branch}" \
+        -F git_branch="${branch_name}" \
+        -F head_commit_author_name="${head_commit_author_name}" \
+        -F head_commit_author_email="${head_commit_author_email}" \
+        -F head_commit_author_message="${head_commit_message}" \
+        -F head_commit_author_date="${head_commit_date}" \
+        -F parent_commit_sha="${commit_parent}" \
+        -F parent_commit_author_name="${parent_commit_author_name}" \
+        -F parent_commit_author_email="${parent_commit_author_email}" \
+        -F parent_commit_author_message="${parent_commit_message}" \
+        -F parent_commit_author_date="${parent_commit_date}" \
+        -F base_dir="${base_dir}" \
+        "${optionalArgs[@]}" \
+        -s "https://otterwise.app/ingress/upload-fallback")
+fi
 
 uploaded=$(grep -o 'Queued for processing' <<< "${UPLOAD_RESPONSE}")
 
