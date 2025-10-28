@@ -156,6 +156,30 @@ elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
     ci_branch="$(printenv GITHUB_HEAD_REF | xargs)"
     ci_repo="$(printenv GITHUB_REPOSITORY | xargs)"
 
+    # Fallback for nektos/act or missing GITHUB_REPOSITORY
+    if [[ -z "$ci_repo" ]] || [[ "$ci_repo" == *"/tmp/"* ]] || [[ "$ci_repo" == *"act-repo"* ]]; then
+        if test "${quiet:-0}" != "1"; then
+            echo "  GITHUB_REPOSITORY not set or invalid, detecting from git remote..."
+        fi
+        
+        # Try to get repo from git remote URL
+        git_remote_url=$(git config --get remote.origin.url 2>/dev/null || echo "")
+        
+        if [[ -n "$git_remote_url" ]]; then
+            # Extract owner/repo from various git URL formats
+            # SSH format: git@github.com:owner/repo.git
+            # HTTPS format: https://github.com/owner/repo.git
+            if [[ "$git_remote_url" =~ github\.com[:/]([^/]+/[^/]+)(\.git)?$ ]]; then
+                ci_repo="${BASH_REMATCH[1]}"
+                ci_repo="${ci_repo%.git}"  # Remove .git if present
+                
+                if test "${quiet:-0}" != "1"; then
+                    echo "  Detected repo from git remote: ${ci_repo}"
+                fi
+            fi
+        fi
+    fi
+
     # consider usiing GITHUB_WORKSPACE for base_dir?
 
     github_ref="$(printenv GITHUB_REF | xargs)"
@@ -460,6 +484,13 @@ if [[ -z "${org_token}" ]]; then
 
     if test "${quiet:-0}" != "1"; then
         echo "  Found: ${org_token}"
+    fi
+fi
+
+if [[ -z "$repo_token" ]] && [[ -z "$org_token" ]]; then
+    echo "ERROR: No repo_token or org_token provided. Need help? See https://getotterwise.com/docs/ci-providers/bash-uploader#repo-token"
+    if test "${fail_on_errors:-0}" != "0"; then
+        exit 1
     fi
 fi
 
