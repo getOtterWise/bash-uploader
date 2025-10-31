@@ -377,6 +377,18 @@ if test "$file" == ""; then
         coverage_path="build/logs/cobertura.xml"
     elif [ -f "coverage/lcov.info" ]; then
         coverage_path="coverage/lcov.info"
+    elif [ -f "coverage.out" ]; then
+        coverage_path="coverage.out"
+    elif [ -f "cobertura.xml" ]; then
+        coverage_path="cobertura.xml"
+    elif [ -f "clover.xml" ]; then
+        coverage_path="clover.xml"
+    elif [ -f "lcov.info" ]; then
+        coverage_path="lcov.info"
+    elif [ -f "coverage.xml" ]; then
+        coverage_path="coverage.xml"
+    elif [ -f "coverage.info" ]; then
+        coverage_path="coverage.info"
     else
         echo "  Could not determine Coverage file path, please verify that the file exists. Alternatively pass it with --file [PATH]"
         if test "${fail_on_errors:-0}" != "0"; then
