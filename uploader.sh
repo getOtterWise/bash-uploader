@@ -320,7 +320,7 @@ elif [ -n "$(printenv JENKINS_URL | xargs)" ]; then
     git_url="$(printenv GIT_URL | xargs)"
     if [ -n "$git_url" ]; then
         # Extract owner/repo from various git URL formats
-        if [[ "$git_url" =~ github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$ ]]; then
+        if [[ "$git_url" =~ github\.com[:/]([^/]+/[^/]+)(\.git)?$ ]]; then
             ci_repo="${BASH_REMATCH[1]}"
             ci_repo="${ci_repo%.git}"
         fi
@@ -433,10 +433,10 @@ if test "${quiet:-0}" != "1"; then
 fi
 
 # get commit info
-head_commit_author_name=$(git log -1 --format="%an" ${commit_sha})
-head_commit_author_email=$(git log -1 --format="%ae" ${commit_sha})
-head_commit_message=$(git log -1 --format="%s" ${commit_sha})
-head_commit_date=$(git log -1 --format="%at" ${commit_sha})
+head_commit_author_name=$(git log -1 --format="%an" "${commit_sha}")
+head_commit_author_email=$(git log -1 --format="%ae" "${commit_sha}")
+head_commit_message=$(git log -1 --format="%s" "${commit_sha}")
+head_commit_date=$(git log -1 --format="%at" "${commit_sha}")
 
 if test "${quiet:-0}" != "1"; then
     echo "    Commit Author: ${head_commit_author_name} <${head_commit_author_email}>"
@@ -455,10 +455,10 @@ if [ -n "$ci_pr" ] && [ -n "$ci_base_branch" ]; then
     fi
 
     # Try to resolve the base branch - first check if it exists locally
-    base_branch_sha=$(git rev-parse --verify origin/${ci_base_branch} 2>/dev/null)
+    base_branch_sha=$(git rev-parse --verify "origin/${ci_base_branch}" 2>/dev/null)
 
     if [ -z "$base_branch_sha" ]; then
-        base_branch_sha=$(git rev-parse --verify ${ci_base_branch} 2>/dev/null)
+        base_branch_sha=$(git rev-parse --verify "${ci_base_branch}" 2>/dev/null)
     fi
 
     # If base branch not found locally, try fetching it (common in CI shallow clones)
@@ -467,8 +467,8 @@ if [ -n "$ci_pr" ] && [ -n "$ci_base_branch" ]; then
             echo "    Base branch not found locally, attempting to fetch: ${ci_base_branch}"
         fi
 
-        git fetch origin ${ci_base_branch}:refs/remotes/origin/${ci_base_branch} --depth=1 2>/dev/null || true
-        base_branch_sha=$(git rev-parse --verify origin/${ci_base_branch} 2>/dev/null)
+        git fetch origin "${ci_base_branch}:refs/remotes/origin/${ci_base_branch}" --depth=1 2>/dev/null || true
+        base_branch_sha=$(git rev-parse --verify "origin/${ci_base_branch}" 2>/dev/null)
     fi
 
     # Validate we got a valid commit SHA (40 hex for SHA-1, 64 hex for SHA-256)
@@ -484,7 +484,7 @@ if [ -n "$ci_pr" ] && [ -n "$ci_base_branch" ]; then
         fi
 
         # Try to find merge base as fallback
-        merge_base=$(git merge-base HEAD origin/${ci_base_branch} 2>/dev/null || git merge-base HEAD ${ci_base_branch} 2>/dev/null || echo "")
+        merge_base=$(git merge-base HEAD "origin/${ci_base_branch}" 2>/dev/null || git merge-base HEAD "${ci_base_branch}" 2>/dev/null || echo "")
 
         if [ -n "$merge_base" ] && [[ "$merge_base" =~ ^[0-9a-f]{40}$|^[0-9a-f]{64}$ ]]; then
             commit_parent="$merge_base"
@@ -498,7 +498,7 @@ fi
 
 # Fall back to direct parent commit if not in PR or base branch detection failed
 if [ -z "$commit_parent" ]; then
-    commit_parent=$(git rev-parse ${commit_sha}^1 2>/dev/null || echo "")
+    commit_parent=$(git rev-parse "${commit_sha}^1" 2>/dev/null || echo "")
 
     if test "${quiet:-0}" != "1"; then
         echo "    Parent Commit: ${commit_parent:-<none>}"
