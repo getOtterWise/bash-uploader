@@ -417,10 +417,8 @@ else
     fi
 fi
 
-# todo gitlabCI
 # todo teamcity
 # todo herokuCI
-# todo azurePipelines
 # todo bitbucketCI
 
 
@@ -446,11 +444,38 @@ if test "${quiet:-0}" != "1"; then
     echo "    Commit Date: ${head_commit_date}"
 fi
 
-# get first parent commit (safely handle shallow clones and first commits)
-commit_parent=$(git rev-parse ${commit_sha}^1 2>/dev/null || echo "")
+# get comparison commit (base branch for PRs, parent commit for direct pushes)
+# For PRs: compare against the base branch HEAD
+# For direct pushes: compare against the parent commit
+commit_parent=""
 
-if test "${quiet:-0}" != "1"; then
-    echo "    Commit Parent: ${commit_parent:-<none>}"
+if [ -n "$ci_pr" ] && [ -n "$ci_base_branch" ]; then
+    if test "${quiet:-0}" != "1"; then
+        echo "    Detected PR, attempting to get base branch commit for: ${ci_base_branch}"
+    fi
+
+    # Try to get the base branch commit SHA
+    # Try origin/branch first, then just branch name
+    commit_parent=$(git rev-parse origin/${ci_base_branch} 2>/dev/null || git rev-parse ${ci_base_branch} 2>/dev/null || echo "")
+
+    if [ -n "$commit_parent" ]; then
+        if test "${quiet:-0}" != "1"; then
+            echo "    Base Branch Commit: ${commit_parent}"
+        fi
+    else
+        if test "${quiet:-0}" != "1"; then
+            echo "    Could not resolve base branch, falling back to parent commit"
+        fi
+    fi
+fi
+
+# Fall back to direct parent commit if not in PR or base branch detection failed
+if [ -z "$commit_parent" ]; then
+    commit_parent=$(git rev-parse ${commit_sha}^1 2>/dev/null || echo "")
+
+    if test "${quiet:-0}" != "1"; then
+        echo "    Parent Commit: ${commit_parent:-<none>}"
+    fi
 fi
 
 # get parent commit info if any
