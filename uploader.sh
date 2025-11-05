@@ -454,17 +454,44 @@ if [ -n "$ci_pr" ] && [ -n "$ci_base_branch" ]; then
         echo "    Detected PR, attempting to get base branch commit for: ${ci_base_branch}"
     fi
 
-    # Try to get the base branch commit SHA
-    # Try origin/branch first, then just branch name
-    commit_parent=$(git rev-parse origin/${ci_base_branch} 2>/dev/null || git rev-parse ${ci_base_branch} 2>/dev/null || echo "")
+    # Try to resolve the base branch - first check if it exists locally
+    base_branch_sha=$(git rev-parse --verify origin/${ci_base_branch} 2>/dev/null)
 
-    if [ -n "$commit_parent" ]; then
+    if [ -z "$base_branch_sha" ]; then
+        base_branch_sha=$(git rev-parse --verify ${ci_base_branch} 2>/dev/null)
+    fi
+
+    # If base branch not found locally, try fetching it (common in CI shallow clones)
+    if [ -z "$base_branch_sha" ]; then
+        if test "${quiet:-0}" != "1"; then
+            echo "    Base branch not found locally, attempting to fetch: ${ci_base_branch}"
+        fi
+
+        git fetch origin ${ci_base_branch}:refs/remotes/origin/${ci_base_branch} --depth=1 2>/dev/null || true
+        base_branch_sha=$(git rev-parse --verify origin/${ci_base_branch} 2>/dev/null)
+    fi
+
+    # Validate we got a valid commit SHA (40 hex characters)
+    if [ -n "$base_branch_sha" ] && [[ "$base_branch_sha" =~ ^[0-9a-f]{40}$ ]]; then
+        commit_parent="$base_branch_sha"
+
         if test "${quiet:-0}" != "1"; then
             echo "    Base Branch Commit: ${commit_parent}"
         fi
     else
         if test "${quiet:-0}" != "1"; then
-            echo "    Could not resolve base branch, falling back to parent commit"
+            echo "    Could not resolve base branch, trying merge-base fallback"
+        fi
+
+        # Try to find merge base as fallback
+        merge_base=$(git merge-base HEAD origin/${ci_base_branch} 2>/dev/null || git merge-base HEAD ${ci_base_branch} 2>/dev/null || echo "")
+
+        if [ -n "$merge_base" ] && [[ "$merge_base" =~ ^[0-9a-f]{40}$ ]]; then
+            commit_parent="$merge_base"
+
+            if test "${quiet:-0}" != "1"; then
+                echo "    Using merge-base: ${commit_parent}"
+            fi
         fi
     fi
 fi
