@@ -350,7 +350,7 @@ elif [ -n "$(printenv CHIPPER | xargs)" ]; then
     fi
     
     # Try with GitHub format
-    ci_repo=$(echo "$ci_clone_url" | sed -E 's|.*github\.com[:/]?([^/]+/[^/]+)\.git|\1|')
+    ci_repo=$(echo "$ci_clone_url" | sed -E 's|.*github\.com[:/]([^/]+/[^/]+)\.git|\1|')
     
     if test "${quiet:-0}" != "1"; then
         echo "  Found: ${ci_repo}"
