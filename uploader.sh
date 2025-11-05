@@ -471,8 +471,8 @@ if [ -n "$ci_pr" ] && [ -n "$ci_base_branch" ]; then
         base_branch_sha=$(git rev-parse --verify origin/${ci_base_branch} 2>/dev/null)
     fi
 
-    # Validate we got a valid commit SHA (40 hex characters)
-    if [ -n "$base_branch_sha" ] && [[ "$base_branch_sha" =~ ^[0-9a-f]{40}$ ]]; then
+    # Validate we got a valid commit SHA (40 hex for SHA-1, 64 hex for SHA-256)
+    if [ -n "$base_branch_sha" ] && [[ "$base_branch_sha" =~ ^[0-9a-f]{40}$|^[0-9a-f]{64}$ ]]; then
         commit_parent="$base_branch_sha"
 
         if test "${quiet:-0}" != "1"; then
@@ -486,7 +486,7 @@ if [ -n "$ci_pr" ] && [ -n "$ci_base_branch" ]; then
         # Try to find merge base as fallback
         merge_base=$(git merge-base HEAD origin/${ci_base_branch} 2>/dev/null || git merge-base HEAD ${ci_base_branch} 2>/dev/null || echo "")
 
-        if [ -n "$merge_base" ] && [[ "$merge_base" =~ ^[0-9a-f]{40}$ ]]; then
+        if [ -n "$merge_base" ] && [[ "$merge_base" =~ ^[0-9a-f]{40}$|^[0-9a-f]{64}$ ]]; then
             commit_parent="$merge_base"
 
             if test "${quiet:-0}" != "1"; then
