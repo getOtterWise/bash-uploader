@@ -533,13 +533,13 @@ fi
 
 # Safely get diff, handling shallow clones and first commits
 if [ -n "$commit_parent" ]; then
-    diffContent=$(git diff ${commit_parent} ${commit_sha} --unified=0 2>/dev/null || echo "")
+    diffContent=$(git diff "${commit_parent}" "${commit_sha}" --unified=0 2>/dev/null || echo "")
 else
     # For first commit or when parent is not available, show all files as new
     if test "${quiet:-0}" != "1"; then
         echo "    No parent commit available, generating diff for first commit..."
     fi
-    diffContent=$(git show --unified=0 --format="" ${commit_sha} 2>/dev/null || echo "")
+    diffContent=$(git show --unified=0 --format="" "${commit_sha}" 2>/dev/null || echo "")
 fi
 
 if test "${quiet:-0}" != "1"; then
