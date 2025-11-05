@@ -57,27 +57,72 @@ if test "${quiet:-0}" != "1"; then
         echo "  --flag = ${flag}"
 fi
 
+########## VALIDATE REQUIRED TOOLS ##########
+if test "${quiet:-0}" != "1"; then
+    echo "Validating required tools..."
+fi
+
+missing_tools=()
+
+if ! command -v git &> /dev/null; then
+    missing_tools+=("git")
+fi
+
+if ! command -v curl &> /dev/null; then
+    missing_tools+=("curl")
+fi
+
+if ! command -v jq &> /dev/null; then
+    missing_tools+=("jq")
+fi
+
+if ! command -v awk &> /dev/null; then
+    missing_tools+=("awk")
+fi
+
+if [ ${#missing_tools[@]} -gt 0 ]; then
+    echo "ERROR: Missing required tools: ${missing_tools[*]}"
+    echo "Please install the missing tools and try again."
+    if test "${fail_on_errors:-0}" != "0"; then
+        exit 1
+    else
+        exit 0
+    fi
+fi
+
+if test "${quiet:-0}" != "1"; then
+    echo "  All required tools found!"
+fi
+
 ########## GIT ##########
 if test "${quiet:-0}" != "1"; then
     echo "Attempting to detect Git info ..."
 fi
 
-branch_names="$(git branch)"
+branch_names="$(git branch 2>/dev/null)"
+branch_name=""
 
 if test "${quiet:-0}" != "1"; then
     echo "    git branch output: ${branch_names}"
 fi
 
-IFS=$'\n'
-read -r -a branches <<<"${branch_names}"
+if [ -n "$branch_names" ]; then
+    IFS=$'\n'
+    read -r -a branches <<<"${branch_names}"
 
-for branch in "${branches[@]}"; do
-    if [[ ${branch} = "* (no branch)" ]]; then
-        branch_name="(no branch)"
-    elif [[ ${branch} == *"* "* ]]; then
-        branch_name=$(echo "${branch}" | sed -rE 's|\* (\(HEAD detached at )?([\w\/\-\\]*)\)?|\2|' | sed -rE 's|([\w\/\-\\]*)\)|\1|')
-    fi
-done
+    for branch in "${branches[@]}"; do
+        if [[ ${branch} = "* (no branch)" ]]; then
+            branch_name="(no branch)"
+        elif [[ ${branch} == *"* "* ]]; then
+            branch_name=$(echo "${branch}" | sed -E 's|\* (\(HEAD detached at )?([\w\/\-\\]*)\)?|\2|' | sed -E 's|([\w\/\-\\]*)\)|\1|')
+        fi
+    done
+fi
+
+# If branch detection failed, try getting it from git symbolic-ref or rev-parse
+if [ -z "$branch_name" ]; then
+    branch_name=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+fi
 
 if test "${quiet:-0}" != "1"; then
     echo "    Branch: ${branch_name}"
@@ -145,6 +190,16 @@ if [ -n "$(printenv TRAVIS | xargs)" ]; then
     ci_pr="$(printenv TRAVIS_PULL_REQUEST | xargs)"
     ci_job_id="$(printenv TRAVIS_JOB_ID | xargs)"
     ci_build_number="$(printenv TRAVIS_BUILD_NUMBER | xargs)"
+    ci_repo="$(printenv TRAVIS_REPO_SLUG | xargs)"
+    ci_head_commit="$(printenv TRAVIS_COMMIT | xargs)"
+
+    # In PRs, TRAVIS_BRANCH is the target branch, TRAVIS_PULL_REQUEST_BRANCH is the source
+    if [ "$ci_pr" != "false" ] && [ -n "$ci_pr" ]; then
+        ci_branch="$(printenv TRAVIS_PULL_REQUEST_BRANCH | xargs)"
+        ci_base_branch="$(printenv TRAVIS_BRANCH | xargs)"
+    else
+        ci_branch="$(printenv TRAVIS_BRANCH | xargs)"
+    fi
 elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
     if test "${quiet:-0}" != "1"; then
         echo "  Detected Github Actions"
@@ -185,6 +240,8 @@ elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
     github_ref="$(printenv GITHUB_REF | xargs)"
     github_event="$(printenv GITHUB_EVENT_NAME | xargs)"
     ci_head_commit="$(printenv GITHUB_SHA | xargs)"
+    ci_author="$(printenv GITHUB_ACTOR | xargs)"
+
     if [[ ${github_event} = "pull_request" ]]; then
         if test "${quiet:-0}" != "1"; then
             echo "  Found Pull Request"
@@ -222,15 +279,28 @@ elif [ -n "$(printenv CIRCLECI | xargs)" ]; then
     ci_job_id="$(printenv CIRCLE_WORKFLOW_ID | xargs)"
     ci_build_number="$(printenv CIRCLE_WORKFLOW_ID | xargs)"
     ci_pr="$(printenv CIRCLE_PR_NUMBER | xargs)"
+    ci_branch="$(printenv CIRCLE_BRANCH | xargs)"
+    ci_head_commit="$(printenv CIRCLE_SHA1 | xargs)"
+    ci_author="$(printenv CIRCLE_USERNAME | xargs)"
+
+    # Get repository from CIRCLE_PROJECT_USERNAME and CIRCLE_PROJECT_REPONAME
+    circle_username="$(printenv CIRCLE_PROJECT_USERNAME | xargs)"
+    circle_reponame="$(printenv CIRCLE_PROJECT_REPONAME | xargs)"
+    if [ -n "$circle_username" ] && [ -n "$circle_reponame" ]; then
+        ci_repo="${circle_username}/${circle_reponame}"
+    fi
 elif [ -n "$(printenv APPVEYOR | xargs)" ]; then
     if test "${quiet:-0}" != "1"; then
-        echo "  Detected AppVeyer"
+        echo "  Detected AppVeyor"
     fi
     ci_detected="appveyor"
     ci_pr="$(printenv APPVEYOR_PULL_REQUEST_NUMBER | xargs)"
     ci_branch="$(printenv APPVEYOR_REPO_BRANCH | xargs)"
     ci_job_id="$(printenv APPVEYOR_JOB_NUMBER | xargs)"
     ci_build_number="$(printenv APPVEYOR_BUILD_NUMBER | xargs)"
+    ci_repo="$(printenv APPVEYOR_REPO_NAME | xargs)"
+    ci_head_commit="$(printenv APPVEYOR_REPO_COMMIT | xargs)"
+    ci_author="$(printenv APPVEYOR_REPO_COMMIT_AUTHOR | xargs)"
 elif [ -n "$(printenv JENKINS_URL | xargs)" ]; then
     if test "${quiet:-0}" != "1"; then
         echo "  Detected Jenkins"
@@ -243,6 +313,18 @@ elif [ -n "$(printenv JENKINS_URL | xargs)" ]; then
     ci_branch="${ci_branch:=$(printenv CHANGE_BRANCH | xargs)}"
     ci_branch="${ci_branch:=$(printenv GIT_BRANCH | xargs)}"
     ci_branch="${ci_branch:=$(printenv BRANCH_NAME | xargs)}"
+    ci_head_commit="$(printenv GIT_COMMIT | xargs)"
+    ci_author="$(printenv CHANGE_AUTHOR | xargs)"
+
+    # Try to extract repo from GIT_URL
+    git_url="$(printenv GIT_URL | xargs)"
+    if [ -n "$git_url" ]; then
+        # Extract owner/repo from various git URL formats
+        if [[ "$git_url" =~ github\.com[:/]([^/]+/[^/]+)(\.git)?$ ]]; then
+            ci_repo="${BASH_REMATCH[1]}"
+            ci_repo="${ci_repo%.git}"
+        fi
+    fi
 elif [ -n "$(printenv CHIPPER | xargs)" ]; then
     if test "${quiet:-0}" != "1"; then
         echo "  Detected ChipperCI"
@@ -268,10 +350,55 @@ elif [ -n "$(printenv CHIPPER | xargs)" ]; then
     fi
     
     # Try with GitHub format
-    ci_repo=$(echo "$ci_clone_url" | sed -rE 's|.*github\.com[:/]?([^/]+/[^/]+)\.git|\1|')
+    ci_repo=$(echo "$ci_clone_url" | sed -E 's|.*github\.com[:/]?([^/]+/[^/]+)\.git|\1|')
     
     if test "${quiet:-0}" != "1"; then
         echo "  Found: ${ci_repo}"
+    fi
+elif [ -n "$(printenv GITLAB_CI | xargs)" ]; then
+    if test "${quiet:-0}" != "1"; then
+        echo "  Detected GitLab CI"
+    fi
+    ci_detected="gitlab-ci"
+    ci_job_id="$(printenv CI_JOB_ID | xargs)"
+    ci_build_number="$(printenv CI_PIPELINE_ID | xargs)"
+    ci_pr="$(printenv CI_MERGE_REQUEST_IID | xargs)"
+    ci_branch="$(printenv CI_COMMIT_BRANCH | xargs)"
+    ci_base_branch="$(printenv CI_MERGE_REQUEST_TARGET_BRANCH_NAME | xargs)"
+    ci_head_commit="$(printenv CI_COMMIT_SHA | xargs)"
+    ci_author="$(printenv GITLAB_USER_LOGIN | xargs)"
+
+    # Get repository from CI_PROJECT_PATH (format: owner/repo)
+    ci_repo="$(printenv CI_PROJECT_PATH | xargs)"
+
+    # For merge requests, use the source branch
+    if [ -n "$ci_pr" ]; then
+        ci_branch="$(printenv CI_MERGE_REQUEST_SOURCE_BRANCH_NAME | xargs)"
+        ci_head_commit="$(printenv CI_MERGE_REQUEST_SOURCE_BRANCH_SHA | xargs)"
+    fi
+elif [ -n "$(printenv TF_BUILD | xargs)" ]; then
+    if test "${quiet:-0}" != "1"; then
+        echo "  Detected Azure Pipelines"
+    fi
+    ci_detected="azure-pipelines"
+    ci_job_id="$(printenv BUILD_BUILDID | xargs)"
+    ci_build_number="$(printenv BUILD_BUILDNUMBER | xargs)"
+    ci_branch="$(printenv BUILD_SOURCEBRANCHNAME | xargs)"
+    ci_head_commit="$(printenv BUILD_SOURCEVERSION | xargs)"
+    ci_author="$(printenv BUILD_REQUESTEDFOR | xargs)"
+
+    # Get repository from BUILD_REPOSITORY_NAME (format: owner/repo)
+    ci_repo="$(printenv BUILD_REPOSITORY_NAME | xargs)"
+
+    # For pull requests
+    if [ "$(printenv BUILD_REASON | xargs)" = "PullRequest" ]; then
+        ci_pr="$(printenv SYSTEM_PULLREQUEST_PULLREQUESTNUMBER | xargs)"
+        ci_branch="$(printenv SYSTEM_PULLREQUEST_SOURCEBRANCH | xargs)"
+        ci_base_branch="$(printenv SYSTEM_PULLREQUEST_TARGETBRANCH | xargs)"
+
+        # Clean up branch names (remove refs/heads/ prefix if present)
+        ci_branch="${ci_branch#refs/heads/}"
+        ci_base_branch="${ci_base_branch#refs/heads/}"
     fi
 elif [ -n "$(printenv COTTER_LOCAL | xargs)" ]; then
     if test "${quiet:-0}" != "1"; then
@@ -319,19 +446,19 @@ if test "${quiet:-0}" != "1"; then
     echo "    Commit Date: ${head_commit_date}"
 fi
 
-# get first parent commit
-commit_parent=$(git rev-parse $(git log -1 --pretty=format:'%H' | xargs)^1)
+# get first parent commit (safely handle shallow clones and first commits)
+commit_parent=$(git rev-parse ${commit_sha}^1 2>/dev/null || echo "")
 
 if test "${quiet:-0}" != "1"; then
-    echo "    Commit Parent: ${commit_parent}"
+    echo "    Commit Parent: ${commit_parent:-<none>}"
 fi
 
 # get parent commit info if any
 if test "${commit_parent}" != ""; then
-    parent_commit_author_name=$(git log -1 --format="%an" ${commit_parent})
-    parent_commit_author_email=$(git log -1 --format="%ae" ${commit_parent})
-    parent_commit_message=$(git log -1 --format="%s" ${commit_parent})
-    parent_commit_date=$(git log -1 --format="%at" ${commit_parent})
+    parent_commit_author_name=$(git log -1 --format="%an" ${commit_parent} 2>/dev/null || echo "")
+    parent_commit_author_email=$(git log -1 --format="%ae" ${commit_parent} 2>/dev/null || echo "")
+    parent_commit_message=$(git log -1 --format="%s" ${commit_parent} 2>/dev/null || echo "<<NO PARENT>>")
+    parent_commit_date=$(git log -1 --format="%at" ${commit_parent} 2>/dev/null || echo "")
 else
     parent_commit_author_name=""
     parent_commit_author_email=""
@@ -352,7 +479,16 @@ if test "${quiet:-0}" != "1"; then
     echo "Retrieving Git Diff ..."
 fi
 
-diffContent=$(git diff HEAD^1 HEAD --unified=0)
+# Safely get diff, handling shallow clones and first commits
+if [ -n "$commit_parent" ]; then
+    diffContent=$(git diff ${commit_parent} ${commit_sha} --unified=0 2>/dev/null || echo "")
+else
+    # For first commit or when parent is not available, show all files as new
+    if test "${quiet:-0}" != "1"; then
+        echo "    No parent commit available, generating diff for first commit..."
+    fi
+    diffContent=$(git show --unified=0 --format="" ${commit_sha} 2>/dev/null || echo "")
+fi
 
 if test "${quiet:-0}" != "1"; then
     echo "    Wiping code from Git Diff ..."
