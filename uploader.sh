@@ -320,7 +320,7 @@ elif [ -n "$(printenv JENKINS_URL | xargs)" ]; then
     git_url="$(printenv GIT_URL | xargs)"
     if [ -n "$git_url" ]; then
         # Extract owner/repo from various git URL formats
-        if [[ "$git_url" =~ github\.com[:/]([^/]+/[^/]+)(\.git)?$ ]]; then
+        if [[ "$git_url" =~ github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$ ]]; then
             ci_repo="${BASH_REMATCH[1]}"
             ci_repo="${ci_repo%.git}"
         fi
