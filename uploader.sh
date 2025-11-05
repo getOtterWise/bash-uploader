@@ -507,10 +507,10 @@ fi
 
 # get parent commit info if any
 if test "${commit_parent}" != ""; then
-    parent_commit_author_name=$(git log -1 --format="%an" ${commit_parent} 2>/dev/null || echo "")
-    parent_commit_author_email=$(git log -1 --format="%ae" ${commit_parent} 2>/dev/null || echo "")
-    parent_commit_message=$(git log -1 --format="%s" ${commit_parent} 2>/dev/null || echo "<<NO PARENT>>")
-    parent_commit_date=$(git log -1 --format="%at" ${commit_parent} 2>/dev/null || echo "")
+    parent_commit_author_name=$(git log -1 --format="%an" "${commit_parent}" 2>/dev/null || echo "")
+    parent_commit_author_email=$(git log -1 --format="%ae" "${commit_parent}" 2>/dev/null || echo "")
+    parent_commit_message=$(git log -1 --format="%s" "${commit_parent}" 2>/dev/null || echo "<<NO PARENT>>")
+    parent_commit_date=$(git log -1 --format="%at" "${commit_parent}" 2>/dev/null || echo "")
 else
     parent_commit_author_name=""
     parent_commit_author_email=""
