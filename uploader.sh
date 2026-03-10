@@ -15,9 +15,6 @@ while [ $# -gt 0 ]; do
     -type-coverage-file | --type-coverage-file)
         type_coverage_file="$2"
         ;;
-    -log-file | --log-file)
-        log_file="$2"
-        ;;
     -quiet | --quiet)
         quiet=1
         ;;
@@ -32,6 +29,9 @@ while [ $# -gt 0 ]; do
         ;;
     -flag | --flag)
         flag="$2"
+        ;;
+    -component | --component)
+        component="$2"
         ;;
     -base-dir | --base-dir)
         base_dir="$2"
@@ -55,6 +55,7 @@ if test "${quiet:-0}" != "1"; then
         echo "  --quiet = ${quiet}"
         echo "  --base-dir = ${base_dir}"
         echo "  --flag = ${flag}"
+        echo "  --component = ${component}"
 fi
 
 ########## VALIDATE REQUIRED TOOLS ##########
@@ -216,10 +217,10 @@ elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
         if test "${quiet:-0}" != "1"; then
             echo "  GITHUB_REPOSITORY not set or invalid, detecting from git remote..."
         fi
-        
+
         # Try to get repo from git remote URL
         git_remote_url=$(git config --get remote.origin.url 2>/dev/null || echo "")
-        
+
         if [[ -n "$git_remote_url" ]]; then
             # Extract owner/repo from various git URL formats
             # SSH format: git@github.com:owner/repo.git
@@ -227,7 +228,7 @@ elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
             if [[ "$git_remote_url" =~ github\.com[:/]([^/]+/[^/]+)(\.git)?$ ]]; then
                 ci_repo="${BASH_REMATCH[1]}"
                 ci_repo="${ci_repo%.git}"  # Remove .git if present
-                
+
                 if test "${quiet:-0}" != "1"; then
                     echo "  Detected repo from git remote: ${ci_repo}"
                 fi
@@ -246,18 +247,18 @@ elif [ -n "$(printenv GITHUB_ACTIONS | xargs)" ]; then
         if test "${quiet:-0}" != "1"; then
             echo "  Found Pull Request"
         fi
-    
+
         if test "${quiet:-0}" != "1"; then
             echo "  Using GITHUB_EVENT_PATH for parsing Pull Request number"
         fi
 
         ci_pr=$(jq --raw-output .number "$GITHUB_EVENT_PATH")
-        
+
         if [[ -z "$ci_pr" || ! "$ci_pr" =~ ^[0-9]+$ ]]; then
             if test "${quiet:-0}" != "1"; then
                 echo "  Using refs for parsing Pull Request number"
             fi
-            
+
             IFS='/'
             read -r -a refs <<<"${github_ref}"
             ci_pr="${refs[2]}"
@@ -329,7 +330,7 @@ elif [ -n "$(printenv CHIPPER | xargs)" ]; then
     if test "${quiet:-0}" != "1"; then
         echo "  Detected ChipperCI"
         echo "  Environment:"
-     
+
         echo "    CI_COMMIT_SHA: $(printenv CI_COMMIT_SHA | xargs)"
         echo "    CI_COMMIT_SHA_SHORT: $(printenv CI_COMMIT_SHA_SHORT | xargs)"
         echo "    CI_COMMIT_BRANCH: $(printenv CI_COMMIT_BRANCH | xargs)"
@@ -338,20 +339,20 @@ elif [ -n "$(printenv CHIPPER | xargs)" ]; then
         echo "    CI_CLONE_URL: $(printenv CI_CLONE_URL | xargs)"
         echo "    CI_COMMIT_USER: $(printenv CI_COMMIT_USER | xargs)"
     fi
-    
+
     ci_detected="chipper-ci"
     ci_pr="$(printenv CI_COMMIT_TAG | xargs)" # todo figure out if this is correct (is it release, not PR?)
     ci_branch="$(printenv CI_COMMIT_BRANCH | xargs)"
     ci_clone_url="$(printenv CI_CLONE_URL | xargs)"
     ci_author="$(printenv CI_COMMIT_USER | xargs)"
-    
+
     if test "${quiet:-0}" != "1"; then
         echo "  Using Clone URL to detect repository: ${ci_clone_url}"
     fi
-    
+
     # Try with GitHub format
     ci_repo=$(echo "$ci_clone_url" | sed -E 's|.*github\.com[:/]([^/]+/[^/]+)\.git|\1|')
-    
+
     if test "${quiet:-0}" != "1"; then
         echo "  Found: ${ci_repo}"
     fi
@@ -604,7 +605,7 @@ fi
 ########## CONFIG FILE ##########
  if [ -f ".otterwise.yml" ]; then
     config_path=".otterwise.yml"
-        
+
     if test "${quiet:-0}" != "1"; then
         echo "Found config file, will be used for overwriting repository and organization settings."
     fi
@@ -696,7 +697,7 @@ fi
 
 ########## Make a copy of the coverage file ##########
 cp "${coverage_path}" "$coverage_path.otterwise"
-            
+
 if test "${quiet:-0}" != "1"; then
     echo "Created copy of coverage file"
 fi
@@ -722,7 +723,7 @@ if [[ "$coverage_path" == *.xml.otterwise ]]; then
         awk -v base_dir="$base_dir_for_replacement" '/<method / { gsub(/name="[^"]*"/, "name=\"\"") }
                                    /<method / { gsub(/signature="[^"]*"/, "signature=\"\"") }
                                    /<source>/ { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
-                                               
+
         if test "${quiet:-0}" != "1"; then
             echo "Stripped code and base directory from what was assumed to be a Cobertura Coverage File"
         fi
@@ -733,7 +734,7 @@ if [[ "$coverage_path" == *.xml.otterwise ]]; then
     else
         # Most likely Clover
         awk -v base_dir="$base_dir_for_replacement" '/<class / { gsub(/(name|namespace)="[^"]*"/, "") } /<line / { gsub(/(name|visibility)="[^"]*"/, "") } /<file / { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
-        
+
         if test "${quiet:-0}" != "1"; then
             echo "Stripped code and base directory from what was assumed to be a Clover Coverage File"
         fi
@@ -775,20 +776,20 @@ if test "$mutation_file" != ""; then
             jq '(.escaped |= map(del(.mutator.originalSourceCode))) | (.timeouted |= map(del(.mutator.originalSourceCode))) | (.killed |= map(del(.mutator.originalSourceCode))) | (.errored |= map(del(.mutator.originalSourceCode))) | (.syntaxErrors |= map(del(.mutator.originalSourceCode))) | (.uncovered |= map(del(.mutator.originalSourceCode))) | (.ignored |= map(del(.mutator.originalSourceCode)))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
             jq '.escaped |= map(del(.processOutput)) | .timeouted |= map(del(.processOutput)) | .killed |= map(del(.processOutput)) | .errored |= map(del(.processOutput)) | .syntaxErrors |= map(del(.processOutput)) | .uncovered |= map(del(.processOutput)) | .ignored |= map(del(.processOutput))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
             jq '.escaped |= map(del(.diff)) | .timeouted |= map(del(.diff)) | .killed |= map(del(.diff)) | .errored |= map(del(.diff)) | .syntaxErrors |= map(del(.diff)) | .uncovered |= map(del(.diff)) | .ignored |= map(del(.diff))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
-        
+
             if test "${quiet:-0}" != "1"; then
                 echo "  Replacing base_dir ..."
             fi
-            
+
             # Remove base dir from Mutation log file (Infection)
             jq --arg homePath "$base_dir" '.escaped |= map(.mutator.originalFilePath |= sub($homePath; "")) | .timeouted |= map(.mutator.originalFilePath |= sub($homePath; "")) | .killed |= map(.mutator.originalFilePath |= sub($homePath; "")) | .errored |= map(.mutator.originalFilePath |= sub($homePath; "")) | .syntaxErrors |= map(.mutator.originalFilePath |= sub($homePath; "")) | .uncovered |= map(.mutator.originalFilePath |= sub($homePath; "")) | .ignored |= map(.mutator.originalFilePath |= sub($homePath; ""))' "${mutation_file}" > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
         fi
-        
+
         # Minify JSON
         if test "${quiet:-0}" != "1"; then
             echo "  Minifying JSON ..."
         fi
-    
+
         cat ${mutation_file} | jq -c > "${mutation_file}.temp" && mv "${mutation_file}.temp" "${mutation_file}"
     fi
 
@@ -811,7 +812,7 @@ if test "$type_coverage_file" != ""; then
             echo "  Format is Pest PHP"
             type_coverage_format="pest-php"
         fi
-            
+
         # Add type coverage file to upload
         optionalArgs+=(-F type_coverage_file=@"${type_coverage_file}")
     fi
@@ -822,14 +823,14 @@ else
             echo "  Found pest-type-coverage.json, checking..."
         fi
         type_coverage_file="pest-type-coverage.json"
-        
+
         # Ensure is Pest PHP format
         if jq -e '.format == "pest"' "${type_coverage_file}" > /dev/null 2>&1; then
             if test "${quiet:-0}" != "1"; then
                 echo "  Format is Pest PHP"
                 type_coverage_format="pest-php"
             fi
-                
+
             # Add type coverage file to upload
             optionalArgs+=(-F type_coverage_file=@"${type_coverage_file}")
             optionalArgs+=(-F type_coverage_format="${type_coverage_format}")
@@ -839,14 +840,14 @@ else
             echo "  Found build/logs/pest-type-coverage.json, checking..."
         fi
         type_coverage_file="build/logs/pest-type-coverage.json"
-        
+
         # Ensure is Pest PHP format
         if jq -e '.format == "pest"' "${type_coverage_file}" > /dev/null 2>&1; then
             if test "${quiet:-0}" != "1"; then
                 echo "  Format is Pest PHP"
                 type_coverage_format="pest-php"
             fi
-                
+
             # Add type coverage file to upload
             optionalArgs+=(-F type_coverage_file=@"${type_coverage_file}")
             optionalArgs+=(-F type_coverage_format="${type_coverage_format}")
@@ -859,6 +860,11 @@ if test "$flag" != ""; then
     optionalArgs+=(-F flag="${flag}")
 fi
 
+# Add component
+if test "$component" != ""; then
+    optionalArgs+=(-F component="${component}")
+fi
+
 if test "${quiet:-0}" != "1"; then
     echo "Detected data:"
     echo "  Git Branch: ${branch_name}"
@@ -866,7 +872,7 @@ if test "${quiet:-0}" != "1"; then
     echo "  Git Commit Author: ${head_commit_author_name} (${head_commit_author_email})"
     echo "  Git Commit Message: ${head_commit_message}"
     echo "  Git Parent Commit Sha: ${commit_parent}"
-    echo "  Git Parent Commit Author: ${parent_commit_author_name} (${parent_commit_author_email})"    
+    echo "  Git Parent Commit Author: ${parent_commit_author_name} (${parent_commit_author_email})"
     echo "  Git Parent Commit Message: ${parent_commit_message}"
     echo "  CI Provider: ${ci_detected}"
     echo "  CI JOB: ${ci_job_id}"
@@ -886,6 +892,7 @@ if test "${quiet:-0}" != "1"; then
     echo "  Test Coverage File: ${coverage_path}"
     echo "  Mutation Coverage File: ${mutation_file}"
     echo "  Flag: ${flag}"
+    echo "  Component: ${component}"
 fi
 
 if test "${quiet:-0}" != "1"; then
@@ -923,7 +930,7 @@ if ! UPLOAD_RESPONSE=$(curl --fail --connect-timeout 5 --retry 3 --retry-max-tim
     if test "${quiet:-0}" != "1"; then
         echo "Main upload endpoint failed after retries, using fallback endpoint"
     fi
-    
+
     UPLOAD_RESPONSE=$(curl --fail --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
         -F clover=@"${coverage_path}" \
         -F diff=@"_otterwise_diff_temp_.diff" \
