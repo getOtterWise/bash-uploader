@@ -33,6 +33,12 @@ while [ $# -gt 0 ]; do
     -component | --component)
         component="$2"
         ;;
+    -part | --part)
+        part="$2"
+        ;;
+    -part-total | --part-total)
+        part_total="$2"
+        ;;
     -base-dir | --base-dir)
         base_dir="$2"
         ;;
@@ -56,6 +62,8 @@ if test "${quiet:-0}" != "1"; then
         echo "  --base-dir = ${base_dir}"
         echo "  --flag = ${flag}"
         echo "  --component = ${component}"
+        echo "  --part = ${part}"
+        echo "  --part-total = ${part_total}"
 fi
 
 ########## VALIDATE REQUIRED TOOLS ##########
@@ -865,6 +873,40 @@ if test "$component" != ""; then
     optionalArgs+=(-F component="${component}")
 fi
 
+# Add part index/total (for splitting coverage across multiple uploads for the same flag+component)
+if test "$part" != ""; then
+    if ! [[ "$part" =~ ^[1-9][0-9]*$ ]]; then
+        echo "ERROR: --part must be a positive integer, got: ${part}"
+        if test "${fail_on_errors:-0}" != "0"; then
+            exit 1
+        else
+            exit 0
+        fi
+    fi
+    optionalArgs+=(-F part="${part}")
+fi
+
+if test "$part_total" != ""; then
+    if ! [[ "$part_total" =~ ^[1-9][0-9]*$ ]]; then
+        echo "ERROR: --part-total must be a positive integer, got: ${part_total}"
+        if test "${fail_on_errors:-0}" != "0"; then
+            exit 1
+        else
+            exit 0
+        fi
+    fi
+    optionalArgs+=(-F part_total="${part_total}")
+fi
+
+if test "$part" != "" && test "$part_total" != "" && [ "$part" -gt "$part_total" ]; then
+    echo "ERROR: --part (${part}) cannot be greater than --part-total (${part_total})"
+    if test "${fail_on_errors:-0}" != "0"; then
+        exit 1
+    else
+        exit 0
+    fi
+fi
+
 if test "${quiet:-0}" != "1"; then
     echo "Detected data:"
     echo "  Git Branch: ${branch_name}"
@@ -893,6 +935,8 @@ if test "${quiet:-0}" != "1"; then
     echo "  Mutation Coverage File: ${mutation_file}"
     echo "  Flag: ${flag}"
     echo "  Component: ${component}"
+    echo "  Part: ${part}"
+    echo "  Part Total: ${part_total}"
 fi
 
 if test "${quiet:-0}" != "1"; then
