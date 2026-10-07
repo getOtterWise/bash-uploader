@@ -724,59 +724,28 @@ else
     base_dir_for_replacement="${base_dir}"
 fi
 
-# Detect format by content, not by file extension (eg. lcov.info, coverage.info or a custom --file)
-if grep -q "end_of_record" "$coverage_path" && grep -qE "^(SF|TN):" "$coverage_path"; then
-    # LCOV: replace function names (FN, FNDA, FNA) with an ID per record (FNDA/FNA refer to FN by name)
-    # and replace branch expressions (BRDA, lcov 2.x) with an index.
-    # SF paths are not changed, the server strips the base directory (sent as base_dir) from them.
-    awk '
-        function fn_id(name) {
-            if (!(name in ids)) { ids[name] = "fn" (++fn_count) }
-            return ids[name]
-        }
-        /^FN:/ && match($0, /^FN:[0-9]+,([0-9]+,)?/) { $0 = substr($0, 1, RLENGTH) fn_id(substr($0, RLENGTH + 1)) }
-        /^FNDA:/ && match($0, /^FNDA:[0-9]+,/) { $0 = substr($0, 1, RLENGTH) fn_id(substr($0, RLENGTH + 1)) }
-        /^FNA:/ && match($0, /^FNA:[0-9]+,[0-9]+,/) { $0 = substr($0, 1, RLENGTH) fn_id(substr($0, RLENGTH + 1)) }
-        /^BRDA:/ && match($0, /^BRDA:[0-9]+,e?[0-9]+,/) {
-            prefix = substr($0, 1, RLENGTH)
-            rest = substr($0, RLENGTH + 1)
-            if (match(rest, /,([0-9]+|-)$/)) {
-                branch = substr(rest, 1, RSTART - 1)
-                if (branch !~ /^[0-9]+$/) { $0 = prefix "b" (++branch_count) substr(rest, RSTART) }
-            }
-        }
-        /^end_of_record/ { split("", ids); fn_count = 0; branch_count = 0 }
-        1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
+# Clover, Cobertura or LCOV
+if [[ "$coverage_path" == *.xml.otterwise ]]; then
+    if grep -q "cobertura." "$coverage_path"; then
+        # Cobertura
+        awk -v base_dir="$base_dir_for_replacement" '/<method / { gsub(/name="[^"]*"/, "name=\"\"") }
+                                   /<method / { gsub(/signature="[^"]*"/, "signature=\"\"") }
+                                   /<source>/ { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
 
-    if test "${quiet:-0}" != "1"; then
-        echo "Stripped code from what was assumed to be a LCOV Coverage File"
-    fi
-elif grep -q "<coverage" "$coverage_path"; then
-    # Clover and Cobertura: the rules only touch elements that exist in one of the formats, so both are
-    # applied. This way a wrong format guess (eg. Cobertura without a DOCTYPE) can not leak code.
-    #   Cobertura: <method name signature>, <class name>, <source>
-    #   Clover:    <line name signature visibility>, <class name namespace>, <file>
-    # Attributes are only removed inside the given tag, so minified (single line) XML keeps eg. <file name>.
-    # The leading space prevents a match on other attributes, eg. "filename" on a Cobertura <class>.
-    awk -v base_dir="$base_dir_for_replacement" '
-        function strip_attrs(line, tag, attrs,    out, seg) {
-            out = ""
-            while (match(line, "<" tag "([ \t]+[^ \t=>]+=\"[^\"]*\")*")) {
-                seg = substr(line, RSTART, RLENGTH)
-                gsub(" (" attrs ")=\"[^\"]*\"", "", seg)
-                out = out substr(line, 1, RSTART - 1) seg
-                line = substr(line, RSTART + RLENGTH)
-            }
-            return out line
-        }
-        /<method / { $0 = strip_attrs($0, "method", "name|signature") }
-        /<class / { $0 = strip_attrs($0, "class", "name|namespace") }
-        /<line / { $0 = strip_attrs($0, "line", "name|signature|visibility") }
-        /<source>/ || /<file / { gsub(base_dir, "") }
-        1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
+        if test "${quiet:-0}" != "1"; then
+            echo "Stripped code and base directory from what was assumed to be a Cobertura Coverage File"
+        fi
+    elif grep -q "SF:" "$coverage_path" && grep -q "end_of_record" "$coverage_path"; then
+        if test "${quiet:-0}" != "1"; then
+            echo "File is LCOV, nothing to do here"
+        fi
+    else
+        # Most likely Clover
+        awk -v base_dir="$base_dir_for_replacement" '/<class / { gsub(/(name|namespace)="[^"]*"/, "") } /<line / { gsub(/(name|visibility)="[^"]*"/, "") } /<file / { gsub(base_dir, "") } 1' "$coverage_path" > tmpfile && mv tmpfile "$coverage_path"
 
-    if test "${quiet:-0}" != "1"; then
-        echo "Stripped code and base directory from what was assumed to be a Clover or Cobertura Coverage File"
+        if test "${quiet:-0}" != "1"; then
+            echo "Stripped code and base directory from what was assumed to be a Clover Coverage File"
+        fi
     fi
 fi
 
