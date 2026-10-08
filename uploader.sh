@@ -739,11 +739,14 @@ if grep -q "end_of_record" "$coverage_path" && grep -qE "^(SF|TN):" "$coverage_p
     # LCOV: replace function names (FN, FNDA, FNA) with an ID per record (FNDA/FNA refer to FN by name)
     # and replace branch expressions (BRDA, lcov 2.x) with an index.
     # SF paths are not changed, the server strips the base directory (sent as base_dir) from them.
+    # Line endings become \n first: with \r\n the rules that match at the end of a line ($) do not match,
+    # and a branch expression would be uploaded as it is.
     awk '
         function fn_id(name) {
             if (!(name in ids)) { ids[name] = "fn" (++fn_count) }
             return ids[name]
         }
+        { sub(/\r$/, "") }
         /^FN:/ && match($0, /^FN:[0-9]+,([0-9]+,)?/) { $0 = substr($0, 1, RLENGTH) fn_id(substr($0, RLENGTH + 1)) }
         /^FNDA:/ && match($0, /^FNDA:[0-9]+,/) { $0 = substr($0, 1, RLENGTH) fn_id(substr($0, RLENGTH + 1)) }
         /^FNA:/ && match($0, /^FNA:[0-9]+,[0-9]+,/) { $0 = substr($0, 1, RLENGTH) fn_id(substr($0, RLENGTH + 1)) }
