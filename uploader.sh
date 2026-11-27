@@ -401,6 +401,9 @@ elif [ -n "$(printenv GITLAB_CI | xargs)" ]; then
             ci_head_commit="$merge_request_source_sha"
         fi
 
+        # The commit the merge request branched from; diffing against the target branch tip would include changes merged to the target since
+        gitlab_diff_base_sha="$(printenv CI_MERGE_REQUEST_DIFF_BASE_SHA | xargs)"
+
         # The target project is the one OtterWise knows (differs from CI_PROJECT_PATH for fork merge requests)
         merge_request_project_path="$(printenv CI_MERGE_REQUEST_PROJECT_PATH | xargs)"
         if [ -n "$merge_request_project_path" ]; then
@@ -490,7 +493,22 @@ fi
 # For direct pushes: compare against the parent commit
 commit_parent=""
 
-if [ -n "$ci_pr" ] && [ -n "$ci_base_branch" ]; then
+# GitLab merge requests: use the diff base commit, fetching it first in shallow clones
+if [ -n "${gitlab_diff_base_sha:-}" ]; then
+    if ! git cat-file -e "${gitlab_diff_base_sha}^{commit}" 2>/dev/null; then
+        git fetch origin "${gitlab_diff_base_sha}" --depth=1 2>/dev/null || true
+    fi
+
+    if git cat-file -e "${gitlab_diff_base_sha}^{commit}" 2>/dev/null; then
+        commit_parent="$gitlab_diff_base_sha"
+
+        if test "${quiet:-0}" != "1"; then
+            echo "    Using merge request diff base: ${commit_parent}"
+        fi
+    fi
+fi
+
+if [ -z "$commit_parent" ] && [ -n "$ci_pr" ] && [ -n "$ci_base_branch" ]; then
     if test "${quiet:-0}" != "1"; then
         echo "    Detected PR, attempting to get base branch commit for: ${ci_base_branch}"
     fi
