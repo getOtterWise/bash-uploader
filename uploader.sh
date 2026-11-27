@@ -373,17 +373,49 @@ elif [ -n "$(printenv GITLAB_CI | xargs)" ]; then
     ci_build_number="$(printenv CI_PIPELINE_ID | xargs)"
     ci_pr="$(printenv CI_MERGE_REQUEST_IID | xargs)"
     ci_branch="$(printenv CI_COMMIT_BRANCH | xargs)"
+    # Tag pipelines have no branch, so fall back to the ref name
+    ci_branch="${ci_branch:=$(printenv CI_COMMIT_REF_NAME | xargs)}"
     ci_base_branch="$(printenv CI_MERGE_REQUEST_TARGET_BRANCH_NAME | xargs)"
     ci_head_commit="$(printenv CI_COMMIT_SHA | xargs)"
     ci_author="$(printenv GITLAB_USER_LOGIN | xargs)"
 
-    # Get repository from CI_PROJECT_PATH (format: owner/repo)
+    # Get repository from CI_PROJECT_PATH (format: group/subgroup/project)
     ci_repo="$(printenv CI_PROJECT_PATH | xargs)"
 
-    # For merge requests, use the source branch
+    # Fallback to the git remote when CI_PROJECT_PATH is missing (https://gitlab.com/group/project.git)
+    if [ -z "$ci_repo" ]; then
+        git_remote_url=$(git config --get remote.origin.url 2>/dev/null || echo "")
+        if [[ "$git_remote_url" =~ gitlab\.com[:/](.+)$ ]]; then
+            ci_repo="${BASH_REMATCH[1]}"
+            ci_repo="${ci_repo%.git}"
+        fi
+    fi
+
+    # Merge request pipelines
     if [ -n "$ci_pr" ]; then
         ci_branch="$(printenv CI_MERGE_REQUEST_SOURCE_BRANCH_NAME | xargs)"
-        ci_head_commit="$(printenv CI_MERGE_REQUEST_SOURCE_BRANCH_SHA | xargs)"
+
+        # Keep CI_COMMIT_SHA unless GitLab gives us the source branch SHA (it is empty in non-merged-result pipelines)
+        merge_request_source_sha="$(printenv CI_MERGE_REQUEST_SOURCE_BRANCH_SHA | xargs)"
+        if [ -n "$merge_request_source_sha" ]; then
+            ci_head_commit="$merge_request_source_sha"
+        fi
+
+        # The target project is the one OtterWise knows (differs from CI_PROJECT_PATH for fork merge requests)
+        merge_request_project_path="$(printenv CI_MERGE_REQUEST_PROJECT_PATH | xargs)"
+        if [ -n "$merge_request_project_path" ]; then
+            ci_repo="$merge_request_project_path"
+        fi
+    else
+        # Branch pipelines: find the open merge request of this project in "group/project!12,group/other!3"
+        open_merge_requests="$(printenv CI_OPEN_MERGE_REQUESTS | xargs)"
+        IFS=',' read -ra open_merge_request_list <<< "$open_merge_requests"
+        for open_merge_request in "${open_merge_request_list[@]}"; do
+            if [[ "$open_merge_request" == "${ci_repo}!"* ]]; then
+                ci_pr="${open_merge_request##*!}"
+                break
+            fi
+        done
     fi
 elif [ -n "$(printenv TF_BUILD | xargs)" ]; then
     if test "${quiet:-0}" != "1"; then
