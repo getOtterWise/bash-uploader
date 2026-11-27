@@ -373,8 +373,10 @@ elif [ -n "$(printenv GITLAB_CI | xargs)" ]; then
     ci_build_number="$(printenv CI_PIPELINE_ID | xargs)"
     ci_pr="$(printenv CI_MERGE_REQUEST_IID | xargs)"
     ci_branch="$(printenv CI_COMMIT_BRANCH | xargs)"
-    # Tag pipelines have no branch, so fall back to the ref name
-    ci_branch="${ci_branch:=$(printenv CI_COMMIT_REF_NAME | xargs)}"
+    # Tag pipelines have no branch, and CI_COMMIT_REF_NAME would be the tag name, so only use it when this is not a tag
+    if [ -z "$(printenv CI_COMMIT_TAG | xargs)" ]; then
+        ci_branch="${ci_branch:=$(printenv CI_COMMIT_REF_NAME | xargs)}"
+    fi
     ci_base_branch="$(printenv CI_MERGE_REQUEST_TARGET_BRANCH_NAME | xargs)"
     ci_head_commit="$(printenv CI_COMMIT_SHA | xargs)"
     ci_author="$(printenv GITLAB_USER_LOGIN | xargs)"
@@ -407,6 +409,10 @@ elif [ -n "$(printenv GITLAB_CI | xargs)" ]; then
         # The target project is the one OtterWise knows (differs from CI_PROJECT_PATH for fork merge requests)
         merge_request_project_path="$(printenv CI_MERGE_REQUEST_PROJECT_PATH | xargs)"
         if [ -n "$merge_request_project_path" ]; then
+            # A pipeline that runs in the fork has a pipeline id that the target project does not know, so do not send it
+            if [ "$merge_request_project_path" != "$ci_repo" ]; then
+                ci_build_number=""
+            fi
             ci_repo="$merge_request_project_path"
         fi
     else
@@ -416,6 +422,8 @@ elif [ -n "$(printenv GITLAB_CI | xargs)" ]; then
         for open_merge_request in "${open_merge_request_list[@]}"; do
             if [[ "$open_merge_request" == "${ci_repo}!"* ]]; then
                 ci_pr="${open_merge_request##*!}"
+                # Branch pipelines have no target branch or diff base, so the diff below would be wrong: let the server build it
+                skip_diff_upload=1
                 break
             fi
         done
@@ -853,6 +861,10 @@ echo "$parsedDiff" > _otterwise_diff_temp_.diff
 
 
 optionalArgs=()
+if test "${skip_diff_upload:-0}" != "1"; then
+    optionalArgs+=(-F diff=@"_otterwise_diff_temp_.diff")
+fi
+
 if test "$log_file_path" != ""; then
     optionalArgs+=(-F log_file=@"${log_file_path}")
 fi
@@ -1049,7 +1061,6 @@ fi
 
 if ! UPLOAD_RESPONSE=$(curl --fail --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
     -F clover=@"${coverage_path}" \
-    -F diff=@"_otterwise_diff_temp_.diff" \
     -F ci_provider="${ci_detected}" \
     -F ci_job="${ci_job_id}" \
     -F ci_build="${ci_build_number}" \
@@ -1081,7 +1092,6 @@ if ! UPLOAD_RESPONSE=$(curl --fail --connect-timeout 5 --retry 3 --retry-max-tim
 
     UPLOAD_RESPONSE=$(curl --fail --connect-timeout 5 --retry 3 --retry-max-time 60 --retry-all-errors \
         -F clover=@"${coverage_path}" \
-        -F diff=@"_otterwise_diff_temp_.diff" \
         -F ci_provider="${ci_detected}" \
         -F ci_job="${ci_job_id}" \
         -F ci_build="${ci_build_number}" \
